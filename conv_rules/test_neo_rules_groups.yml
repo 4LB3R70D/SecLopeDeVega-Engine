@@ -1,0 +1,411 @@
+groups:
+  - id: test-y
+    regex: y[0-9]+y
+    rules:
+      - id: 200
+        mode: sync
+        regex: y1y
+        response: "\nlopeY-> This is the first rule of the group 'test-y' for string operations!\n\n"
+
+      - id: 201
+        mode: sync
+        regex: y2y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_CONCAT
+          input:
+            - " _"
+            - EXT_IN
+            - "_"
+            - another_token
+            - "_"
+            - "Lope_Rules!"
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule is concatenating the input, the memory variable generated randomly, a fixed string; and an empty blanck space at the beginning.\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 202
+        mode: sync
+        regex: y3y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_REPLACE
+          input:
+            - string_result
+            - "Lope_Rules!"
+            - "SecLope_Rules!"
+          output:
+            - string_result
+        response: "\nlopeY-> This rule replaces the fixed string added in the previous rule (id:'201'-input:'y2y'), by a new one.\n Result: '{{string_result}}'\n\n"
+
+      - id: 203
+        mode: sync
+        regex: y4y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_SUBTRACT
+          input:
+            - string_result
+            - "SecLope_Rules!"
+          output:
+            - string_result
+        response: "\nlopeY-> This rule replaces the fixed string added in the previous rule (id:'202'-input:'y3y'), by a new one.\n Result: '{{string_result}}'\n\n"
+
+      - id: 204
+        mode: sync
+        regex: y5y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_UPPER
+          input:
+            - string_result
+          output:
+            - string_result
+        response: "\nlopeY-> This rule puts in cappital letters the content of the memory variable 'string_result'.\n Result: '{{string_result}}'\n\n"
+
+      - id: 205
+        mode: sync
+        regex: y6y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_LOWER
+          input:
+            - string_result
+          output:
+            - string_result
+        response: "\nlopeY-> This rule puts in lowercase the content of the memory variable 'string_result'.\n Result: '{{string_result}}'\n\n"
+
+      - id: 206
+        mode: sync
+        regex: y7y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_SPLIT
+          input:
+            - string_result
+            - "_"
+          output:
+            - string_result1
+            - string_result2
+            - string_result3
+        response:
+          "\nlopeY-> This rule splits the string 'string_result' in three different memory variables, separarating via '_':\n
+          - 'string_result1': {{string_result1}}\n
+          - 'string_result2': {{string_result2}}\n
+          - 'string_result3': {{string_result3}}\n
+          The last one can be empty if the rules id:'202' and '203' (input:'y3y' and 'y4y') have been executed previously\n\n"
+
+      - id: 207
+        mode: sync
+        regex: y8y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_TRIM
+          input:
+            - string_result
+          output:
+            - string_result
+        response: "\nlopeY-> This rule trims the content of the memory variable 'string_result'.\n Result: '{{string_result}}'\n\n"
+
+      - id: 208
+        mode: sync
+        regex: y9y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_MATCH
+          input:
+            - string_result
+            - y[0-9]+y
+          output:
+            - bool_result
+        response:
+          "\nlopeY-> This rule checks is a RegEx does a match in a memory variable, puting the result in another memory variable 'bool_result'.\n
+          In this case, we are checking if the memory variable is doing match for the RegEx 'y[0-9]+y'. Result: '{{bool_result}}'\n\n"
+
+      - id: 209
+        mode: sync
+        regex: y10y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_CAPTURE
+          input:
+            - string_result
+            - y[0-9]+y
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule captures a certain information from a memory variable using a RegEx does a match in a memory variable, \n
+          in a similar way the bultin capturing functionality of the rules but over an existing memory variable or the input;\n
+          and adding the content in 'string_result'. The regex in use is this one: 'y[0-9]+y', so in this case only that part of \n
+          the content of the memory variable will remain'\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 210
+        mode: sync
+        regex: y11y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_COUNT
+          input:
+            - string_result
+          output:
+            - number_result
+        response:
+          "\nlopeY-> This rule counts the number of characters of a memory variable, in this case 'string_result'.\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 211
+        mode: sync
+        regex: y12y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_MODE
+          input:
+            - "dog"
+            - "cat"
+            - "dog"
+            - "monkey"
+            - "cat"
+            - "bird"
+            - "dog"
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule calculates the mode (central tendency) of a given nominal data set, and it saves it in 'string_result'.\n
+          In this case, it does that from the following data set:\n
+          - 'dog'\n
+          - 'cat'\n
+          - 'dog'\n
+          - 'monkey'\n
+          - 'cat'\n
+          - 'bird'\n
+          - 'dog'\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 212
+        mode: sync
+        regex: y13y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_ENCODE_B64
+          input:
+            - string_result
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule encodes the content of 'string_result' in base 64.\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 213
+        mode: sync
+        regex: y14y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_DECODE_B64
+          input:
+            - string_result
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule decodes the content of 'string_result' encoded in base 64 for the previous rule (id:'211' - input: 'y12y').\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 214
+        mode: sync
+        regex: y15y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_ENCODE_HEX
+          input:
+            - string_result
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule encodes the content of 'string_result' in hexadecimal.\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 215
+        mode: sync
+        regex: y16y
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_DECODE_HEX
+          input:
+            - string_result
+          output:
+            - string_result
+        trigger:
+          - rule_id: 216
+        response:
+          "\nlopeY-> This rule decodes the content of 'string_result' encoded in hexadecimal for the previous rule (id:'214' - input: 'y15y').\n
+          Result: '{{string_result}}'\n\n"
+
+      - id: 216
+        mode: async
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_CONCAT
+          input:
+            - string_result
+            - "_Lope_is_great!"
+          output:
+            - string_result
+        response:
+          "\nlopeY-> This rule is an async rule that concat a new text, triggered by the rule (id:'215' - input: 'y16y').\n
+          It adds a new fixed text at the end of the string as memory operation. Async rules can do built-in memory operations as well.\n
+          Result: '{{string_result}}'\n\n"
+
+  - id: test-q
+    memory_conditions: # Memory conditions that make the group applicable
+      - var_name: enable_bool_operations
+        value: true
+    rules:
+      - id: 400
+        mode: sync
+        regex: q1q
+        response:
+          "\nlopeQ-> This is the first rule of the group 'test-q' for boolean operations!\n
+          This group of rules can only be used if the memory variable 'enable_bool_operations' is 'true' \n\n"
+
+      - id: 401
+        mode: sync
+        regex: q2q
+        builtin_memory_operation:
+          enable: yes
+          operation: LGC_AND
+          input:
+            - random_bool
+            - multi_memory_bool
+            - global_memory_bool
+            - conn_memory_bool
+            - bool_result
+            - true
+          output:
+            - bool_result
+        response:
+          "\nlopeQ-> This rules an AND operation of the following values:\n
+          - 'random_bool' ({{random_bool}})\n
+          - 'multi_memory_bool' ({{multi_memory_bool}})\n
+          - 'global_memory_bool' ({{global_memory_bool}})\n
+          - 'conn_memory_bool' ({{conn_memory_bool}})\n
+          - 'bool_result' ({{bool_result}})\n
+          - true (fixed value)\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 402
+        mode: sync
+        regex: q3q
+        builtin_memory_operation:
+          enable: yes
+          operation: LGC_OR
+          input:
+            - random_bool
+            - multi_memory_bool
+            - global_memory_bool
+            - conn_memory_bool
+            - bool_result
+            - true
+          output:
+            - bool_result
+        response:
+          "\nlopeQ-> This rules an OR operation of the following values:\n
+          - 'random_bool' ({{random_bool}})\n
+          - 'multi_memory_bool' ({{multi_memory_bool}})\n
+          - 'global_memory_bool' ({{global_memory_bool}})\n
+          - 'conn_memory_bool' ({{conn_memory_bool}})\n
+          - 'bool_result' ({{bool_result}})\n
+          - true (fixed value)\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 403
+        mode: sync
+        regex: q4q
+        builtin_memory_operation:
+          enable: yes
+          operation: LGC_XOR
+          input:
+            - random_bool
+            - multi_memory_bool
+            - global_memory_bool
+            - conn_memory_bool
+            - bool_result
+            - true
+          output:
+            - bool_result
+        response:
+          "\nlopeQ-> This rules a XOR operation of the following values:\n
+          - 'random_bool' ({{random_bool}})\n
+          - 'multi_memory_bool' ({{multi_memory_bool}})\n
+          - 'global_memory_bool' ({{global_memory_bool}})\n
+          - 'conn_memory_bool' ({{conn_memory_bool}})\n
+          - 'bool_result' ({{bool_result}})\n
+          - true (fixed value)\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 404
+        mode: sync
+        regex: q5q
+        builtin_memory_operation:
+          enable: yes
+          operation: LGC_NAND
+          input:
+            - random_bool
+            - multi_memory_bool
+            - global_memory_bool
+            - conn_memory_bool
+            - bool_result
+            - true
+          output:
+            - bool_result
+        response:
+          "\nlopeQ-> This rules a NAND operation of the following values:\n
+          - 'random_bool' ({{random_bool}})\n
+          - 'multi_memory_bool' ({{multi_memory_bool}})\n
+          - 'global_memory_bool' ({{global_memory_bool}})\n
+          - 'conn_memory_bool' ({{conn_memory_bool}})\n
+          - 'bool_result' ({{bool_result}})\n
+          - true (fixed value)\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 405
+        mode: sync
+        regex: q6q
+        builtin_memory_operation:
+          enable: yes
+          operation: LGC_NOR
+          input:
+            - random_bool
+            - multi_memory_bool
+            - global_memory_bool
+            - conn_memory_bool
+            - bool_result
+            - true
+          output:
+            - bool_result
+        response:
+          "\nlopeQ-> This rules a NOR operation of the following values:\n
+          - 'random_bool' ({{random_bool}})\n
+          - 'multi_memory_bool' ({{multi_memory_bool}})\n
+          - 'global_memory_bool' ({{global_memory_bool}})\n
+          - 'conn_memory_bool' ({{conn_memory_bool}})\n
+          - 'bool_result' ({{bool_result}})\n
+          - true (fixed value)\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 406
+        mode: sync
+        regex: q7q
+        builtin_memory_operation:
+          enable: yes
+          operation: LGC_NOT
+          input:
+            - enable_bool_operations
+          output:
+            - enable_bool_operations
+        response:
+          "\nlopeQ-> This rules do a NOT operation over the variable 'enable_bool_operations'.\n
+          This means the boolean operations will be disabled for this connection, and they cannot be used anymore\
+          Sorry!\n
+          Current value: '{{enable_bool_operations}}'\n\n"

@@ -1,0 +1,18 @@
+SEC LOPE DE VEGA project is provided under the MPL-2 License (please check LICENSE.txt)
+
+SEC LOPE DE VEGA project uses the following libraries with the corresponding licenses. 
+These dependencies have not been modified in any way for this project, and they have been used as they are provided:
+
+ + ENGINE:
+   - github.com/RackSec/srslog => BSD-3-Clause license => https://github.com/RackSec/srslog/blob/master/LICENSE
+   - github.com/go-sql-driver/mysql => MPL-2 License (GPL Incompatible) => https://github.com/go-sql-driver/mysql/blob/master/LICENSE 
+   - github.com/jordan-wright/email => MIT License => https://github.com/jordan-wright/email/blob/master/LICENSE
+   - github.com/rs/zerolog => MIT License => https://github.com/rs/zerolog/blob/master/LICENSE
+   - github.com/segmentio/kafka-go => MIT License => https://github.com/segmentio/kafka-go/blob/main/LICENSE
+   - github.com/natefinch/lumberjack => MIT License => https://github.com/natefinch/lumberjack/blob/v2.0/LICENSE
+   - github.com/go-yaml/yaml => MIT & Apache Licenses => https://github.com/go-yaml/yaml/blob/v3/LICENSE
+   - github.com/zeromq/goczmq => MPL-2 License (GPL Incompatible) => https://github.com/zeromq/goczmq/blob/master/LICENSE
+
+
+
+

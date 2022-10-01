@@ -32,7 +32,7 @@ and focusing on the potential use of this software for security reasons:
   (not sure if we can call this [IAST](https://owasp.org/www-project-devsecops-guideline/latest/02c-Interactive-Application-Security-Testing)). 
   Since you can define how many client connections to establish, it might be useful to try to do some [DDoS](https://en.wikipedia.org/wiki/Denial-of-service_attack) testing.
 
-- In server mode, *Lope* can work as a kind of honeypot (or a set of them, this is explained in other sections).It also can work to do some dynamic testing on client software via 
+- In server mode, *Lope* can work as a kind of [honeypot](https://en.wikipedia.org/wiki/Honeypot_(computing)) (or a set of them, this is explained in other sections).It also can work to do some dynamic testing on client software via 
   the answers provided from the server.
 
 However, this software may be useful for other kind of tests that are not only security related, such as mocking-up other systems (as a client or as a server), 

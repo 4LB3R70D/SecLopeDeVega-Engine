@@ -309,7 +309,7 @@ conversation:
         mode: async
         response: "\nlope-> Hello, my name is Iñigo Montoya.\n\n"
         trigger:
-          - rule_id: 5 # Next rule to executein_wrkr.cnv_rules.ExtOperation.ConditionalExecution
+          - rule_id: 5 # Next rule to execute
             delay: 0.5 # sec
 
       - id: 5

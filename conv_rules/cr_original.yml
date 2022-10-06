@@ -98,7 +98,7 @@ operation:
       when: rule_executed # One of the following: "rule_detected", "rule_executed(default)"
 
   # Conditional execution: The external connector only starts execution in the context of having multi external connector memory variables, when one or several of them
-  # has a set of defined values. It can get the IP and port for the execution from some meory variables as well. These memory variables can be different for those declared
+  # has a set of defined values. It can get the IP and port for the execution from some memory variables as well. These memory variables can be different for those declared
   # to be used in the simulation
   conditional_execution:
     enable: yes # yes/no(default)

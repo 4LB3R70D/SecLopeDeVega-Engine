@@ -1,0 +1,486 @@
+# ====================================================
+# EXAMPLE PROTOCOL
+# Author: Alberto Dominguez
+# ====================================================
+name: example # this is a kind of name for the conversation rules
+ext_conn_group: B # empty, or 'default' ==> no group (only one file valid without group)
+enable_use: no # yes/no (default). This enables the use of this conversation rules
+
+operation:
+  mode: server # server (default)/client
+  ip: # In server mode: Origin IP from external connections, empty means any. In client mode: what ip to connect (o domain)
+  use_ip6: no # yes/no (default)
+  port: 1883
+  encrypted: no # yes/no (default). This enables TLS or DTLS
+  tls_client_authentication: no # yes/no (default). This enable TLS authentication
+  transport_protocol: TCP # TCP(default)/UDP
+  close_socket_connection_after_replying: no # yes/no(default) [Aplicable for tcp or dtls]. It disables the functionality 'enable_rule_triggered_closing_socket_connection'
+  enable_rule_triggered_closing_socket_connection:
+    yes # yes/no(default) [Only aplicable for tcp or dtls] It closes the socket but it not ends
+    # the logical conection when the mode of close after answering is not enable and a rule with the 'closing'
+    # field is enable
+  encoding: utf-8 # A value of the following list: 'utf-8' (default), 'utf-16', 'utf-32', 'ascii'
+  use_port_for_connection_identification: no # yes/no(default). Recommendation: Disable this if the tcp connection will be closed after answering
+  interaction_timeout: 300 # seconds, 0 (or negatives values) means no timeout for connections
+  connection_queue:
+    5 # number of unaccepted connections that the system will allow before refusing new connections (default = 5)
+    # Recommendation: use same value than number of concurrent connections or larger
+  max_input_size: 1024 # Max number of bytes accepted as input (default = 1024)
+  max_concurrent_connection:
+    5 # Max number of concurrent connections allowed (default = 5), in client mode it will be the number of connections
+    # established with the target
+  conversation_use_only_first_hit:
+    no # yes/no(default) This means that only the first rule detected if several conversation rules are applicable.
+    # The rule with the smallest ID is the one executed
+  memory_update_when: rule_executed # One of the following: "rule_detected", "rule_executed"(default). (Before session update and custom functions)
+  memory_operations_when: rule_executed # One of the following: "rule_detected", "rule_executed"(default). (Before session update and custom functions)
+  report_memory: yes # yes/no(default). Report the status of the memory for each external activity generated (This adds many entries in the database)
+  encode_b64_memory_reported: yes # yes/no(default). Encode b64 the memroy variables content at the time of reporting memory
+  memory_variables_multi_ext_connector_enable: yes # yes/no(default). To enable the use of Redis server to share memory variables between external connectors
+  multi_ext_connector_memory_overwrite_during_init: yes # yes/no(default). To overwrite exisisting memory variables in Redis during the initialization phase
+  execution_delay: 3 # seconds before starting the execution
+  alert_all_flag: yes # yes/no(default). Alert all activities generated for this set of conversation rules via all channels
+
+  # Custom Functions
+  # 1 - Custom function preprocessor to be executed for any input before trying to detect any rule.
+  # If empty or not present, it means this functionality is disabled.
+  # It alwys gets the raw external input as parameter and and other variables defined in the field 'additional_input' (if present),
+  # and returns a variable that is the input processed by the function
+  # and other variables defined in the field 'additional_output' (if present)
+  # The function has to return the processed input as the first value, and after, all additional values to be saved in memory variables
+  custom_function_preprocessor:
+    name: testing_preprocessor
+    # additional
+    input:
+      - var1
+      - var2
+      - 2
+    # additional
+    output:
+      - var1
+      - var2
+  # 2 - Custom function postprocessor to be executed for after any rule.
+  # If empty or not present, it means this functionality is disabled.
+  # It alwys gets the result of the rule execution as input and and other variables defined in the field 'additional_input' (if present)
+  # The function has to return the processed output as the first value, and after, all additional values to be saved in memory variables
+  custom_function_postprocessor:
+    name: testing_postprocessor
+    # additional
+    input:
+      - var1
+      - var2
+      - "hello!"
+    # additional
+    output:
+      - var1
+      - var2
+  # 3 - Custom functions to be executed for rules
+  custom_functions_when: rule_detected # One of the following: "rule_detected", "rule_executed"(default). (After memory update and before session updates)
+
+  # This adds a session ID for each connection once created (server mode), and this is used to recognise the connection
+  # the external connector will check this ID for each request before executing any rule to identify the connection
+  # In client mode, it will use the key, the separator, and the end value to identify the session id, to keep the conversation:
+  # SESSION_KEY//SEPARATOR//SESSION_VALUE = KEY+KEY_VALUE_SEPARATOR+{session_value}+END_VALUE
+  # The session key and session value must be added in the messages sent by the external connector using this notation: {{SESSION_KEY}}, {{SESSION_VALUE}}
+  session:
+    enable: no # yes/no(default)
+    key: id
+    key_value_separator: ":"
+    end_value: "," # character after the session value (if not present, it will try to limit the session value via a 'space' character, 'brake line' character, or 'end' character)
+    autogenerated: #  for server mode
+      enable: yes # yes(default)/no
+      number_characters: 20 # default 12
+      # One of the following: "numbers", "hex_lower", "hex_upper", "hex_mix", "alphanumeric_upper", "alphanumeric_lower"(default), "alphanumeric_mix",
+      # "alphanumeric_and_symbols_upper", "alphanumeric_and_symbols_lower", "alphanumeric_and_symbols_mix"
+      characters_type: alphanumeric_lower
+    update:
+      enable: yes # yes/no(default)
+      when: rule_executed # One of the following: "rule_detected", "rule_executed(default)"
+
+  # Conditional execution: The external connector only starts execution in the context of having multi external connector memory variables, when one or several of them
+  # has a set of defined values. It can get the IP and port for the execution from some memory variables as well. These memory variables can be different for those declared
+  # to be used in the simulation
+  conditional_execution:
+    enable: yes # yes/no(default)
+    conditions:
+      - mem_var: var1
+        value: 33
+    mem_var_ip: var2
+    mem_var_port: var3
+
+# ---------------------------------------------------------------------
+# Execution memory
+# ---------------------------------------------------------------------
+memory_variables:
+  # list of memory variables to be used in the simulation
+  # use one the following types: "int", "float", "string"(default), "bool"
+  # 'name' is CASE SENSITIVE, and should be unique
+  # these variables can be added in the messages sent by the external connector using this notation: {{VAR_NAME}}
+
+  multi_extconn_level: # Shared for all external connectors. If already existing, the variable is not modified in its initialization phase
+    - name: var1
+      default_value: 0
+      type: int
+      report: yes # yes/no(default). To be reported when memory variable reporting capability is enabled
+
+    - name: var2
+      default_value: False
+      type: bool
+      report: yes # yes/no(default). To be reported when memory variable reporting capability is enabled
+
+    - name: var3
+      default_value: test
+      type: string
+      report: yes # yes/no(default). To be reported when memory variable reporting capability is enabled
+      autogenerated: # Autogeneration of the content of a memory variable:
+        # - If the type is a 'string', it creates a new token
+        # - If the type is a 'float' or 'int', it get a random value between the 'interval limits'
+        # - If the type is a 'bool', it pick randomly a 'True' or 'False' value
+        enable: yes # yes/no(default)
+
+        # String
+        number_characters: 20 # default 12
+        # One of the following: "numbers", "hex_lower", "hex_upper", "hex_mix", "alphanumeric_upper", "alphanumeric_lower"(default), "alphanumeric_mix",
+        # "alphanumeric_and_symbols_upper", "alphanumeric_and_symbols_lower", "alphanumeric_and_symbols_mix"
+        characters_type: alphanumeric_lower
+
+        # Number
+        min_limit_interval: 2 # (default 0)
+        max_limit_interval: 3 # (default 0)
+
+  global_level: # Shared for all connections in the same external connector
+    - name: var4
+      default_value: 0
+      type: int
+
+    - name: var5
+      default_value: False
+      type: bool
+
+    - name: var6
+      default_value: test
+      type: string
+
+  connection_level: # Each connection / session get a different set of variables
+    - name: var7
+      default_value: 0
+      type: int
+
+    - name: var8
+      default_value: False
+      type: bool
+
+    - name: var9
+      default_value: test
+      type: string
+
+  import:
+    - path: ./aux_conv_rules/aux1.yml
+      is_relative: yes
+
+# ---------------------------------------------------------------------
+# Execution rules
+# ---------------------------------------------------------------------
+# The conversation rules set. The default mode is 'sync', other values are 'async' and 'hybrid'. In the 'async' case
+# the regex field is not used, the next rule to execute is the one mentioned in the 'rule_trigger'. If that rule is
+# the number '0', it means the 'async' rule should be executed asynchronously after the connection start. For 'hybrid'
+# ones, it will be executed either the regex is detected (and memory conditions are met), or in a asyncrhonous way.
+# When several regex rules are detected, they are executed in the order they are described in the conversation rules file.
+# The regex and the response can be added using base64, to avoid issues at loading time to avoid having issues with
+# some characters, thought "escaping characters" is allowed in this file via '\'
+conversation:
+  greetings:
+    value: hello moto!
+    b64_flag: no # yes/no (default)
+    enable: yes # yes/no (default)
+    alert:
+      all: no # all channels, default option
+      email: yes
+      http: no
+      kafka: no
+      syslog: yes
+
+  custom_rules: # list of rules
+    groups:
+      - id: test-y
+        regex: y[0-9]+y # Regext that makes the group applicable
+        memory_conditions: # Memory conditions that make the group applicable
+          - var_name: var1
+            value: 1
+            reference_variable: var2
+
+        rules:
+          - id: 1
+            mode: sync
+            regex: y1y
+            response: "\nlopeY-> Hola! Your are connected from the ip:{{IP}} and port:{{PORT}}\n\n"
+
+    rules:
+      - id: 1
+        mode: sync
+        regex: regex_1
+        response: str_response1
+        ending_rule: no
+
+      - id: 2
+        mode: async
+        regex: regex_2_=?¿{}[]@+-$`'^|ç
+        regex_b64: no # yes/no (default)
+        response: str_response1
+        response_b64: no # yes/no (default)
+        trigger:
+          - rule_id: 3 # Next rule to execute
+            delay: 30 # seconds to wait until executing the rule descibed in the 'rule trigger' field
+        ending_rule: no # yes/no (default)
+        closing_connection:
+          no # yes/no (default). For TCP & DTLS connections (and server mode), it closes the socket but it not ends the logical conenction
+          # when the mode of close after answering is not enable. The field' enable_rule_triggered_closing_socket_connection'
+          # should be enable to use this field
+        beginning_async_rule: no # yes/no (default)
+        beginning_async_delay: 30 # seconds to wait until being executed
+        reconnect_before_rule_execution:
+          no # yes/no(default) [Only aplicable for tcp transport protocol or DTLS & client mode]. It reconnects the socket before execute the rule.
+          # The field' enable_rule_triggered_closing_socket_connection'
+          # should be enable to use this field
+
+        # load some memory variables with information obtained from outside. In case of several hits, only the first
+        # one is saved. It only works for sync rules
+        capturing_data:
+          enable: yes # yes/no(default)
+          captures:
+            - regex: capturing_regex1
+              mem_var_name: var1
+              regex_b64: no # yes/no (default)
+
+            - regex: capturing_regex2
+              mem_var_name: var2
+              regex_b64: no # yes/no (default)
+
+        memory:
+          # conditions to satisfy for executing the rule, in case or a reference variable is present
+          # then the comparison is if the value of the memory variable is the same of the reference memory variable.
+          # In case the 'value' field and the 'reference_variable' are present, only the 'reference_variable' field
+          # is used
+          conditions:
+            - var_name: var1
+              value: 1
+              reference_variable: var2
+
+            - var_name: var2
+              value: True
+
+          # new values for some memory variables. This is executed after the capturing data part, so
+          # some memory variables can be overwritten if they are present in both sections. Updated values happens after the execution of the rule.
+          # In case or a reference variable is present then the update use the value of the reference memory variable, the value is omitted
+          updates:
+            - var_name: var1
+              value: 2
+              reference_variable: var2
+
+            - var_name: var2
+              value: test2
+
+        # Execute a bulit-in memory operation for this rule, the 'input' field is a list of variables used in the operation
+        # Potential input values can be the external input (using 'EXT_IN' reserved word), the ip (using 'IP' reserved word) or the port (using 'PORT' reserved word).
+        # Any memory variable can be used as well or raw values, and the output is always saved in memory variables (that should be previously defined in the section 'memory_variables').
+        # Otherwhise, the results are lost. Remember that memory variables are CASE SENSITIVE.
+        # The data 'type' (int, float, bool...) of the result should be the same with the one declared in the section 'memory_variables'.
+        #
+        # The list of supported operations is as follows:
+        #  STR_CONCAT = String concatenation, merge several strings into one: (string, string, string,...) => string
+        #  STR_REPLACE = String replace, replace a string or regex by the value provided: (original_string, string_regex_to_replace, string_to_add) => modified_string
+        #  STR_SUBTRACT = String substract, remove a string within another: (original_string, string_to_replace) => modified_string
+        #  STR_UPPER = String upper, put in uppercase the content of a string: (string) => string
+        #  STR_LOWER = String lower, put in lowercase the content of a string: (string) => string
+        #  STR_SPLIT = String split, it separte a string in several pieces. If there are more pieces that elements in the output field, they will be lost (string_to_split, string_separator) => (string, string, string, ...)
+        #  STR_TRIM = String trim, it trims a string: (string) => string
+        #  STR_MATCH = String match, it checks if a regular expresion is present in a string: (string, string_regex) => bool
+        #  STR_CAPTURE = String capture, it captures a string using a reguex: (original_string, string_regex) => captured_string
+        #  STR_COUNT = String count, it counts the number of characters in a string: (string) => number
+        #  STR_MODE = String mode, it calculates the mode (central tendency) of the given nominal data set: (string, string, ...) => string
+        #  STR_ENCODE_B64 = String encode base 64, it encodes any string into base64: (string) => string
+        #  STR_DECODE_B64 = String decode base 64, it decodes any string already encoded in base64: (string) => string
+        #  STR_ENCODE_HEX = String encode hexadecimal, it encodes any string into hexadecimal: (string) => string
+        #  STR_DECODE_HEX = String decode hexadecimal, it decodes any string already encoded in hexadecimal: (string) => string
+        #
+        #  NBR_SUM = Number sum, it sums a set of values added in the input field: (number, number, ...) => number
+        #  NBR_SUBTRACT = Number substract, it substracts to the first element of the input field, the rest of values added there: (number, number_to_substract, number_to_substract ...) => number
+        #  NBR_MULTIPLY = Number multipy, it multiplies a set of values added in the input field: (number, number, ...) => number
+        #  NBR_DIVIDE = Number divide, it divides the first element by the rest of elements in the input field in a sequential approach: (number, number_to_divide, number_to_divide ...) => number
+        #  NBR_FLOOR = Number divide, it does a floor division of the first element by the rest of elements in the input field in a sequential approach: (number, number_to_floor_divide, number_to_floor_divide ...) => number
+        #  NBR_MODULO = Number modulo, it gets the reminder of a set of modulo operator calls: (number, number_for_modulo_operator, number_for_modulo_operator, ...) => number // https://www.freecodecamp.org/news/the-python-modulo-operator-what-does-the-symbol-mean-in-python-solved/
+        #  NBR_POWER = Number power, it applies a set of sequential power operations to the first element in the list: (number, power_number, power_number, ...) => number
+        #  NBR_INVERSE_SIGN = Number inverse sing, change the sign of the number
+        #  NBR_GREATER = Number greater than, compare tu numbers (a>b):(number,number) => bool
+        #  NBR_LOWER = Number lower than, compare tu numbers (a<b):(number,number) => bool
+        #  NBR_GREATEREQ = Number greater than or equal, compare tu numbers (a>=b):(number,number) => bool
+        #  NBR_LOWEREQ = Number lower than or equal, compare tu numbers (a<=b):(number,number) => bool
+        #  NBR_MEAN = Number mean, Arithmetic mean value (average) of data: (number, number, ...) => number
+        #  NBR_GEOMETRIC_MEAN = Number geometric mean, geometric mean value  of data: (number, number, ...) => number
+        #  NBR_HARMONIC_MEAN = Number harmonic mean, harmonic mean value of data : (number, number, ...) => number
+        #  NBR_MEDIAN = Number median, median value (middle value) of data: (number, number, ...) => number
+        #  NBR_MEDIAN_LOW = Number median low, low median value of data: (number, number, ...) => number
+        #  NBR_MEDIAN_HIGH = Number median high, high median value of data: (number, number, ...) => number
+        #  NBR_MEDIAN_GROUPED = Number median grouped, it calculates the median of grouped continuous data, calculated as the 50th percentile: (number, number, ...) => number
+        #  NBR_MODE = Number mode, it calculates the mode (central tendency) of the given numeric or nominal data set: (number, number, ...) => number
+        #  NBR_POP_STD_DEV = Number standard deviation, it calculates the standard deviation from an entire population: (number, number, ...) => number
+        #  NBR_STD_DEV = Number standard deviation, it calculates the standard deviation from a sample data set: (number, number, ...) => number
+        #  NBR_POP_VAR = Number standard deviation, it calculatesthe variance of an entire population: (number, number, ...) => number
+        #  NBR_VAR = Number standard deviation, it calculates the variance from a sample of data: (number, number, ...) => number
+        #
+        #  LGC_NOT = Logical 'NOT' operation: bool => bool
+        #  LGC_AND = Logical 'AND' operation: (bool, bool, bool, ...) => bool
+        #  LGC_OR = Logical 'OR' operation: (bool, bool, bool, ...) => bool
+        #  LGC_XOR = Logical 'XOR' operation: (bool, bool, bool, ...) => bool
+        #  LGC_NAND = Logical 'NAND' operation: (bool, bool, bool, ...) => bool
+        #  LGC_NOR = Logical 'NOR' operation: (bool, bool, bool, ...) => bool
+        builtin_memory_operation:
+          enable: yes
+          operation: STR_CONCAT
+          input:
+            - EXT_IN
+            - var1
+            - 3
+          output:
+            - var3
+            - var4
+
+        # Execute a custom function for this rule, the 'input' field is a list of variables used by the function.
+        # Potential input values can be the external input (using 'EXT_IN' reserved word) the ip (using 'IP' reserved word) or the port (using 'PORT' reserved word).
+        # Any memory variable can be used as well or raw values, and the output is always saved in memory variables (that should be previously defined in the section 'memory_variables').
+        # Otherwhise, the results are lost. Remember that memory variables,# as well as the function names are CASE SENSITIVE.
+        # The data 'type' (int, float, bool...) of the result should be the same with the one declared in the section 'memory_variables'
+        custom_function:
+          enable: yes
+          name: function_name
+          input:
+            - EXT_IN
+            - var1
+            - var2
+          output:
+            - var3
+            - var4
+
+        # Update the session value of the connection in execution time (when the rule is detected, before being executed)
+        # If several rules are applicable, they are overwritten. The last one is the one that remains (usually, the one with the larger ID)
+        session_update:
+          enable: yes # yes/no (default)
+          # Preference order:  1-mem_var, 2-autogenerated_value, 3-fixed_value,
+          memory_variable: var1 # memory variable to use (CASE SENSITIVE)
+          autogenerated_value: yes # yes/no (default), only used when 'memory_variable' is empty
+          fixed_value: qmpzenixnructbyv1029384756 # new fixed value, only used when 'memory_variable' is empty and 'autogenerated_value' is 'no'
+
+        # Switch for executing some async (or hybrid) rules depending on conditions. E.g., ff memory variable 'AAAA' has the value 'X' (value field), or has the same content
+        # of the memory variable 'BBB', then execute the async Rule 'N'. In case no option fits, use the async rule of the default field (if present and the list length is greater than 0)
+        async_switch:
+          options:
+            # first option or 'case' wit a list of conditions to satisfy
+            - conditions:
+                - var_name: var1
+                  value: 2
+                  reference_variable: var2
+              # if conditions are satisfied, then a set of async (or hybrid) rules to execute
+              rules:
+                - rule_id: 3
+                  delay: 3
+
+            # second option or 'case'
+            - conditions:
+                - var_name: var1
+                  value: 2
+                  reference_variable: var2
+              rules:
+                - rule_id: 3
+                  delay: 3
+
+            # other cases...
+
+          default:
+            # set of async ruls to execute if no 'case' statement is applicable
+            - rule_id: 3
+              delay: 3
+
+        # Some looping is supported, it will execute a set of async rules until conditions are no longer valid.
+        # At the beginning of the loop
+        async_loop:
+          loop:
+            conditions:
+              - var_name: var1
+                value: 2
+                reference_variable: var2
+            rules:
+              - rule_id: 3
+                delay: 3
+
+        # You can create a new instance of external connector if a rule is executed
+        # and optionally, passing a new configuration file, external connector id and password (secret).
+        # If this parameters are not provided, the new instance of external connector will start as
+        # as the original did  (this is powered by python subprocess module)
+        fork:
+          enable: yes
+          config_file: "/path/to/a/different/config/file"
+          new_id: "Terminator"
+          new_secret: "sshhhhhh...it's_a_secret"
+          number: 3 # Number of instances to create
+
+      - id: 3
+        mode: async
+        regex: regex_3
+        response: str_response1
+        ending_rule: yes
+        alert:
+          all: no # all channels, default option
+          email: yes
+          http: no
+          kafka: no
+          syslog: yes
+
+    import:
+      - path: ./aux_conv_rules/aux1.yml
+        is_relative: yes
+
+  # to be executed if an input is not applicable to any conversation rule
+  default:
+    value: hello moto
+    b64_flag: no # yes/no (default)
+    enable: yes # yes/no (default)
+    alert:
+      all: no # all channels, default option
+      email: yes
+      http: no
+      kafka: no
+      syslog: yes
+
+  # to be executed if an empty input is received
+  empty:
+    value: ain't anything!
+    b64_flag: no # yes/no (default)
+    enable: yes # yes/no (default)
+    alert:
+      all: no # all channels, default option
+      email: yes
+      http: no
+      kafka: no
+      syslog: yes
+
+  timeout:
+    value: timeout!
+    b64_flag: no # yes/no (default)
+    enable: yes # yes/no (default)
+    alert: # this alert is not for the rule, it is for the event of timing out
+      all: no # all channels, default option
+      email: yes
+      http: no
+      kafka: no
+      syslog: yes
+
+  ending:
+    value: sayonara baby
+    b64_flag: no # yes/no (default)
+    enable: yes # yes/no (default)
+    alert: # this alert is not for the rule, it is for the event of ending the connection
+      all: no # all channels, default option
+      email: yes
+      http: no
+      kafka: no
+      syslog: yes

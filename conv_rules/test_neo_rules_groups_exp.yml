@@ -1,0 +1,684 @@
+groups:
+  - id: test-z
+    regex: z[0-9]+z
+    rules:
+      - id: 300
+        mode: sync
+        regex: z1z
+        response: "\nlopeZ-> This is the first rule of the group 'test-z' for number operations!\n\n"
+
+      - id: 301
+        mode: sync
+        regex: z2z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_SUM
+          input:
+            - random_float
+            - random_int
+            - 5
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule does a sum of values, in this case the content of 'random_float', 'random_int' and a fixed value ('5')\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 302
+        mode: sync
+        regex: z3z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_SUBTRACT
+          input:
+            - number_result
+            - 5
+            - random_float
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule substract a fixed vale from the value ('5') from 'number_result', and the vale of the memory variable 'random_float'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 303
+        mode: sync
+        regex: z4z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MULTIPLY
+          input:
+            - number_result
+            - 5
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule miltiplies by '5' the content of 'number_result'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 304
+        mode: sync
+        regex: z5z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_DIVIDE
+          input:
+            - number_result
+            - 5
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule divides by '5' the content of 'number_result'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 305
+        mode: sync
+        regex: z6z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_FLOOR
+          input:
+            - number_result
+            - 5
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule does a floor division by '5' of the content of 'number_result'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 306
+        mode: sync
+        regex: z7z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MODULO
+          input:
+            - number_result
+            - 5
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the reminder of doing a division by '5' of the content of 'number_result'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 307
+        mode: sync
+        regex: z8z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_POWER
+          input:
+            - number_result
+            - 2
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the power of two of the current content of 'number_result'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 308
+        mode: sync
+        regex: z9z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_INVERSE_SIGN
+          input:
+            - number_result
+          output:
+            - number_result
+        response: "\nlopeZ-> This rule changes the sign of 'number_result'\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 309
+        mode: sync
+        regex: z10z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_GREATER
+          input:
+            - number_result
+            - random_int
+          output:
+            - bool_result
+        response:
+          "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is greater than 'random_int'({{random_int}})\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 310
+        mode: sync
+        regex: z11z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_LOWER
+          input:
+            - number_result
+            - random_int
+          output:
+            - bool_result
+        response:
+          "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is lower than 'random_int'({{random_int}})\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 311
+        mode: sync
+        regex: z12z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_GREATEREQ
+          input:
+            - number_result
+            - random_int
+          output:
+            - bool_result
+        response:
+          "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is greater or equal than 'random_int'({{random_int}})\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 312
+        mode: sync
+        regex: z13z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_LOWEREQ
+          input:
+            - number_result
+            - random_int
+          output:
+            - bool_result
+        response:
+          "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is lower or equal than 'random_int'({{random_int}})\n
+          Result: '{{bool_result}}'\n\n"
+
+      - id: 313
+        mode: sync
+        regex: z14z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MEAN
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the arithmetic mean (average) of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 314
+        mode: sync
+        regex: z15z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_GEOMETRIC_MEAN
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the geometric mean of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 315
+        mode: sync
+        regex: z16z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_HARMONIC_MEAN
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the harmonic mean of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 316
+        mode: sync
+        regex: z17z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MEDIAN
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the median of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 317
+        mode: sync
+        regex: z18z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MEDIAN_LOW
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the low median value of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 318
+        mode: sync
+        regex: z19z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MEDIAN_HIGH
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the high median value of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 319
+        mode: sync
+        regex: z20z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MEDIAN_GROUPED
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the grouped median value of a set of values (calculated as the 50th percentile). In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 320
+        mode: sync
+        regex: z21z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_MODE
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the mode of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 321
+        mode: sync
+        regex: z22z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_POP_STD_DEV
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the standard deviation form an entire population of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 322
+        mode: sync
+        regex: z23z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_STD_DEV
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the standard deviation form a data set of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 323
+        mode: sync
+        regex: z24z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_POP_VAR
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the variance form an entire population of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+      - id: 324
+        mode: sync
+        regex: z25z
+        builtin_memory_operation:
+          enable: yes
+          operation: NBR_VAR
+          input:
+            - 10
+            - 23
+            - 35
+            - 47
+            - 54
+            - 62
+            - 71
+            - 89
+            - 93
+            - random_float
+            - random_int
+            - multi_memory_int
+            - global_memory_int
+            - conn_memory_int
+          output:
+            - number_result
+        response:
+          "\nlopeZ-> This rule gets the variance form a data set of a set of values. In this case:\n
+          - 10\n
+          - 23\n
+          - 35\n
+          - 47\n
+          - 54\n
+          - 62\n
+          - 71\n
+          - 89\n
+          - 93\n
+          - 'random_float' ({{random_float}})\n
+          - 'random_int' ({{random_int}})\n
+          - 'multi_memory_int' ({{multi_memory_int}})\n
+          - 'global_memory_int' ({{global_memory_int}})\n
+          - 'conn_memory_int' ({{conn_memory_int}})\n
+          Result: '{{number_result}}'\n\n"
+
+import:
+    - path: /conv_rules/test_neo_rules_groups_exp.yml
+      is_relative: yes

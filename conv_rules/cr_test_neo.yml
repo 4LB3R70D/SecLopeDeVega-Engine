@@ -1,0 +1,2039 @@
+# ====================================================
+# EXAMPLE PROTOCOL
+# Author: Alberto Dominguez
+# ====================================================
+name: test_neo
+enable_use: yes # yes/no (default). This enables the use of this conversation rules
+# ext_conn_group: test_neo # empty, or 'default' ==> no group (only one file valid without group)
+
+operation:
+  mode: server # server (default)/client
+  ip: 127.0.0.1 # In server mode: Origin IP from external connections, empty means any. In client mode: what ip to connect (o domain)
+  use_ip6: no # yes/no (default)
+  port: 8888
+  encrypted: no # yes/no (default). TLS/DTLS
+  tls_client_authentication: no # yes/no (default). This enable TLS authentication
+  transport_protocol: "TCP" # TCP(default)/UDP
+  encoding: "utf-8" # A value of the following list: 'utf-8' (default), 'utf-16', 'utf-32', 'ascii'
+  close_socket_connection_after_replying: no # yes/no(default) [Aplicable for tcp or dtls]
+  enable_rule_triggered_closing_socket_connection:
+    yes # yes/no(default) [Only aplicable for tcp or dtls] It closes the socket but it not ends
+    # the logical conection when the mode of close after answering is not enable and a rule with the 'closing'
+    # field is enable
+  use_port_for_connection_identification: yes # yes/no(default). Recommendation: Disable this if the tcp connection will be closed after answering
+  interaction_timeout: 600 # seconds, 0 (or negatives values) means no timeout for connections
+  connection_queue: 5 # number of unaccepted connections that the system will allow before refusing new connections (default = 5)
+  max_input_size: 1024 # Max number of bytes accepted as input (default = 1024)
+  max_concurrent_connection:
+    5 # Max number of concurrent connections allowed (default = 5), in client mode it will be the number of connections
+    # established with the target
+  conversation_use_only_first_hit:
+    no # yes/no(default) This means that only the first rule detected if several conversation rules are applicable.
+    # The rule with the smallest ID is the one executed
+  memory_update_when: rule_detected # One of the following: "rule_detected", "rule_executed"(default).
+  memory_operations_when: rule_detected # One of the following: "rule_detected", "rule_executed"(default). (Before session update and custom functions)
+  report_memory: yes # yes/no(default). Report the status of the memory for each external activity generated (This adds many entries in the database)
+  encode_b64_memory_reported: yes # yes/no(default). Encode b64 the memroy variables content at the time of reporting memory
+  memory_variables_multi_ext_connector_enable: yes # yes/no(default). To enable the use of Redis server to share memory variables between external connectors
+  multi_ext_connector_memory_overwrite_during_init: yes # yes/no(default). To overwrite exisisting memory variables in Redis during the initialization phase
+  execution_delay: 3 # s
+  alert_all_flag: yes
+
+  # Custom Functions
+  # 1 - Custom function preprocessor to be executed for any input before trying to detect any rule.
+  # If empty or not present, it means this functionality is disabled.
+  # It alwys gets the raw input as parameter and and other variables defined in the field 'additional_input' (if present),
+  # and returns a variable that is the input processed by the function
+  # and other variables defined in the field 'additional_output' (if present)
+  # The function has to return the processed input as the first value, and after, all additional values to be saved in memory variables
+  custom_function_preprocessor:
+    enable: yes
+    name: neo_preprocessor # Custom function to be executed for any input before trying to detect any rule.
+    # additional
+    input:
+      - input_counter
+    # additional
+    output:
+      - input_counter
+
+  # 2 - Custom function postprocessor to be executed for after any rule.
+  # If empty or not present, it means this functionality is disabled.
+  # It alwys gets the result of the rule execution as input and and other variables defined in the field 'additional_input' (if present)
+  # The function has to return the processed output as the first value, and after, all additional values to be saved in memory variables
+  custom_function_postprocessor:
+    enable: yes
+    name: neo_postprocessor
+    # additional
+    input:
+      - output_counter
+    # additional
+    output:
+      - output_counter
+
+  # 3 - Custom functions to be executed for rules
+  custom_functions_when: rule_detected # One of the following: "rule_detected", "rule_executed"(default). (After memory update and before session updates)
+
+  # This adds a session ID for each connection once created (server mode), and this is used to recognise the connection
+  # the external connector will check this ID for each request before executing any rule to identify the connection
+  # In client mode, it will use the key, the separator, and the end value to identify the session id, to keep the conversation:
+  # SESSION_KEY//SEPARATOR//SESSION_VALUE = KEY+KEY_VALUE_SEPARATOR+{session_value}+END_VALUE
+  # The session key and session value must be added in the messages sent by the external connector using this notation: {{SESSION_KEY}}, {{SESSION_VALUE}}
+  session:
+    enable: yes # yes/no(default)
+    key: id
+    key_value_separator: ":"
+    end_value: "" # character after the session value (if not present, it will try to limit the session value via a 'space' character, 'brake line' character, or 'end' character)
+    autogenerated: #  for server mode
+      enable: yes # yes(default)/no
+      number_characters: 20 # default 12
+      # One of the following: "numbers", "hex_lower", "hex_upper", "alphanumeric_upper", "alphanumeric_lower"(default), "alphanumeric_mix",
+      # "alphanumeric_and_symbols_upper", "alphanumeric_and_symbols_lower", "alphanumeric_and_symbols_mix"
+      characters_type: alphanumeric_and_symbols_lower
+    update:
+      enable: yes # yes/no(default)
+      when: rule_detected # One of the following: "rule_detected", "rule_executed(default)"
+
+  # Conditional execution: The external connector only starts execution in the context of having multi external connector memory variables, when one or several of them
+  # has a set of defined values. It can get the IP and port for the execution from some meory variables as well. These memory variables can be different for those declared
+  # to be used in the simulation
+  conditional_execution:
+    enable: no # yes/no(default)
+    conditions:
+      - var_name: order_66
+        value: True
+      - var_name: order_67
+        value: False
+    mem_var_ip: ip_mem_var
+    mem_var_port: port_mem_var
+
+# ---------------------------------------------------------------------
+# Execution memory
+# ---------------------------------------------------------------------
+memory_variables:
+  # list of memory variables
+  # use one the following types: "int", "float", "string"(default), "bool"
+  # 'name' is CASE SENSITIVE, and should be unique
+  # these variables can be added in the messages sent by the external connector using this notation: {{VAR_NAME}}
+  
+  multi_extconn_level: # Shared for all external connectors. If already existing, the variable is not modified in its initialization phase
+    - name: multi_memory_string
+      default_value: empty
+      type: string
+      report: yes
+
+    - name: multi_memory_float
+      default_value: 3.14
+      type: float
+      report: yes
+
+    - name: multi_memory_int
+      default_value: 14
+      type: int
+      report: yes
+
+    - name: multi_memory_bool
+      default_value: true
+      type: bool
+      report: yes
+
+  global_level: # Shared for all connections in the same external connector
+    - name: global_memory_string
+      default_value: gato
+      type: string
+      report: yes
+
+    - name: global_memory_float
+      default_value: 1.61
+      type: float
+      report: yes
+
+    - name: global_memory_int
+      default_value: 25
+      type: int
+      report: yes
+
+    - name: global_memory_bool
+      default_value: true
+      type: bool
+      report: yes
+
+  connection_level: # Each connection / session get a different set of variables
+    - name: conn_memory_string
+      default_value: perro
+      type: string
+      report: yes
+
+    - name: conn_memory_float
+      default_value: 2.71
+      type: float
+      report: yes
+
+    - name: conn_memory_int
+      default_value: 11
+      type: int
+      report: yes
+
+    - name: conn_memory_bool
+      default_value: false
+      type: bool
+      report: yes
+
+    - name: input_counter
+      default_value: 0
+      type: int
+      report: no
+
+    - name: output_counter
+      default_value: 0
+      type: int
+      report: no
+
+    - name: another_token
+      type: string
+      report: no
+      autogenerated: # Autogeneration of the content of a memory variable
+        enable: yes # yes/no(default)
+        number_characters: 6 # default 12
+        # One of the following: "numbers", "hex_lower", "hex_upper", "hex_mix", "alphanumeric_upper", "alphanumeric_lower"(default), "alphanumeric_mix",
+        # "alphanumeric_and_symbols_upper", "alphanumeric_and_symbols_lower", "alphanumeric_and_symbols_mix"
+        characters_type: alphanumeric_mix
+
+    - name: random_float
+      type: float
+      report: no
+      autogenerated: # Autogeneration of the content of a memory variable
+        enable: yes # yes/no(default)
+        min_limit_interval: 0
+        max_limit_interval: 1
+
+    - name: random_int
+      type: int
+      report: no
+      autogenerated: # Autogeneration of the content of a memory variable
+        enable: yes # yes/no(default)
+        min_limit_interval: 0
+        max_limit_interval: 100
+
+    - name: random_bool
+      type: bool
+      report: no
+      autogenerated: # Autogeneration of the content of a memory variable
+        enable: yes # yes/no(default)
+
+    - name: string_result
+      type: string
+      report: no
+
+    - name: string_result1
+      type: string
+      report: no
+
+    - name: string_result2
+      type: string
+      report: no
+
+    - name: string_result3
+      type: string
+      report: no
+
+    - name: number_result
+      type: float
+      report: no
+
+    - name: bool_result
+      type: bool
+      report: no
+
+    - name: enable_bool_operations
+      type: bool
+      report: no
+      default_value: true
+
+    - name: string_info_random_token
+      type: string
+      report: no
+      default_value: "Another random token is: {{another_token}} " 
+
+# ---------------------------------------------------------------------
+# Execution rules
+# ---------------------------------------------------------------------
+# The conversation rules set. The default mode is 'sync', other values are 'async' and 'hybrid'. In the 'async' case
+# the regex field is not used, the next rules to execute are the ones declared in the 'trigger' block. If that rule is
+# the number '0', it means the 'async' rule should be executed asynchronously after the connection start. For 'hybrid'
+# ones, it will be executed either the regex is detected (and memory conditions are met), or in a asyncrhonous way.
+# When several regex rules are detected, they are executed in the order they are described in the conversation rules file.
+# The regex and the response can be added using base64, to avoid issues at loading time to avoid having issues with
+# some characters, thought "escaping characters" is allowed in this file via '\'
+conversation:
+  greetings:
+    value:
+      "\nlope-> Welcome to Sec Lope De Vega! Your session id is: {{session_key}}:{{session_value}}; {{string_info_random_token}}\n
+      This is the 'greetings' message, it is executed when a new connection is established\n\n"
+    enable: yes # yes/no (default)
+
+  custom_rules: # list of rules
+    rules:
+      - id: 1
+        mode: sync
+        regex: x1x
+        response: "\nlope-> Hola! Your are connected from the ip:{{IP}} and port:{{PORT}}\n\n"
+
+      - id: 101
+        mode: sync
+        regex: x1x
+        response:
+          "\nlope-> Hello there! I am a second rule that is listening for the same input of the rule number '1'.\n
+          I am only executed if the configuration allows several rules interacting for the same input!\n\n"
+
+      # ========================================================================================
+      # ASYNC RULES
+      # ========================================================================================
+
+      - id: 2
+        mode: async
+        response: "\nlope-> This is an async rule executed at least 3 seconds later after the connection is established!\n\n"
+        beginning_async_rule: yes # yes/no (default)
+        beginning_async_delay: 3 # seconds to wait until being executed
+
+      - id: 3
+        mode: sync
+        regex: x2x
+        response:
+          "\nlope-> Rules can be asyncrhonous and they are triggered by any rule.\n
+          This was is triggering a set of 3 async rules using asynchronous rules\n\n"
+        trigger:
+          - rule_id: 4 # Next rule to execute
+            delay: 0.5 # sec
+
+      - id: 4
+        mode: async
+        response: "\nlope-> Hello, my name is Iñigo Montoya.\n\n"
+        trigger:
+          - rule_id: 5 # Next rule to execute
+            delay: 0.5 # sec
+
+      - id: 5
+        mode: async
+        response: "\nlope-> You killed my father.\n\n"
+        trigger:
+          - rule_id: 6 # Next rule to execute
+            delay: 0.5 # sec
+
+      - id: 6
+        mode: async
+        response: "\nlope-> Prepare to die.\n\n"
+
+      - id: 7
+        regex: x3x
+        mode: sync
+        response:
+          "\nlope-> There are rules that are hybrid. They can be executed synchronously or asynchronously.\n
+          This rule (number 7) is triggering an hybrid rule (number 8)\n\n"
+        trigger:
+          - rule_id: 8 # Next rule to execute
+
+      - id: 8
+        regex: x4x
+        mode: hybrid
+        response: "\nlope-> This is an hybrid rule, triggered asynchronously by the rule '7' or when the input is 'x4x' (synchronously)\n\n"
+
+      - id: 9
+        regex: x5x
+        mode: sync
+        response: ""
+        trigger:
+          - rule_id: 10 # Next rule to execute
+
+      - id: 10
+        mode: async
+        response: "\nlope-> \n
+          \nlope-> Sometimes, synchronous rules have nothing to response, but they are 'executed' as well.\n
+          This rule (number 10) for instance is an async rule triggered by the sync rule that\n
+          is applicable for the input 'x5x' (number 9)\n\n"
+
+      # ========================================================================================
+      # MEMORY VARIABLES: GENERAL + CONNECTION LEVEL
+      # ========================================================================================
+      - id: 11
+        regex: x6x
+        mode: sync
+        response:
+          "\nlope-> You can use the memory variables anytime by using 2x'{'+ variable_name + 2x'}' to add them in the response\n
+          For example, in this connection the memory variables are:\n
+          - 'conn_memory_string': {{conn_memory_string}}\n
+          - 'conn_memory_float': {{conn_memory_float}}\n
+          - 'conn_memory_int': {{conn_memory_int}}\n
+          - 'conn_memory_bool': {{conn_memory_bool}}\n
+          And these memory variables are different for each connection of the external connector\n\n"
+
+      - id: 12
+        regex: x7x
+        mode: sync
+        response:
+          "\nlope-> Asynchronous rules can have nothing to response, but they can do other things like updating memory values.\n
+          Use again 'x6x' to check it\n\n"
+        trigger:
+          - rule_id: 13 # Next rule to execute
+
+      - id: 13
+        mode: async
+        memory:
+          updates:
+            - var_name: conn_memory_string
+              value: "Async rule '12' executed!"
+            - var_name: conn_memory_float
+              value: 5.34
+            - var_name: conn_memory_int
+              value: 25
+            - var_name: conn_memory_bool
+              value: True
+
+      - id: 14
+        regex: x8x
+        mode: sync
+        response:
+          "\nlope-> Any rule can modify the memory variables, synchronous or asynchronous one.\n
+          This one is reseting all connection level memory variables to the default values.\n
+          Use again 'x6x' to check it. The memory variables can be updated when the rule is \n
+          either executed or detected, depending on the configuration\n\n"
+        memory:
+          updates:
+            - var_name: conn_memory_string
+              value: "perro"
+            - var_name: conn_memory_float
+              value: 2.71
+            - var_name: conn_memory_int
+              value: 11
+            - var_name: conn_memory_bool
+              value: False
+
+      - id: 15
+        regex: x9x
+        mode: sync
+        response:
+          "\nlope-> The memory variables allows to add conditions (memory variable should have a specific value) for rule execution as well. \n
+          For instance, this rule is changing the value of the memory variable 'conn_memory_string' to 'dog'. \n
+          The next rule (number 16, input 'x10x') will only execute if this rule has been executed previously \n
+          (content of 'conn_memory_string' is 'dog' and not 'perro'). If those conditions are not fulfilled\n
+          then the 'default' rule is executed (if enabled)\n\n"
+        memory:
+          updates:
+            - var_name: conn_memory_string
+              value: "dog"
+
+      - id: 16
+        regex: x10x
+        mode: sync
+        response:
+          "\nlope-> Since the memory variable 'conn_memory_string' has the content: '{{conn_memory_string}}', \n
+          this rule has been executed!. Doing so, other memory variable is modified: 'conn_memory_int' now is '5'.\n
+          Rules can update memory variables at the same time they have conditions for execution.\n
+          The next rule needs two conditions for execution: 'conn_memory_string' == 'dog' and 'conn_memory_int'=='5'.\n
+          Check it by using 'x11x'(rule number 17)\n\n"
+        memory:
+          conditions:
+            - var_name: conn_memory_string
+              value: "dog"
+          updates:
+            - var_name: conn_memory_int
+              value: 5
+
+      - id: 17
+        regex: x11x
+        mode: sync
+        response: "\nlope-> Rule 17 executed! Any rule can have from 1 to 'n' conditions to satisfy for allowing its execution\n\n"
+        memory:
+          conditions:
+            - var_name: conn_memory_string
+              value: "dog"
+            - var_name: conn_memory_int
+              value: 5
+
+      - id: 18
+        regex: x12x
+        mode: sync
+        response:
+          "\nlope-> Conditional execution also affects asynchronous rules too. This rule is triggering an async rule\n
+          that will only execute if the memory variable 'conn_memory_string'=='perro'\n
+          (you should reset the content using 'x8x' to modify it and see the effects)\n\n"
+        trigger:
+          - rule_id: 19
+
+      - id: 19
+        mode: async
+        response: "\nlope-> I am the rule number '19'! executed asynchronously only if 'conn_memory_string'=='perro'\n\n"
+        memory:
+          conditions:
+            - var_name: conn_memory_string
+              value: "perro"
+
+      - id: 20
+        regex: x13x
+        mode: sync
+        response:
+          "\nlope-> Memory variables can be used to capture information from the input. This one tries to capture data for the connection memory variables.\n
+          For the 'conn_memory_string' add the new content between 's-' and '-s', like this example: 's-mouse-s'\n
+          For the 'conn_memory_float' add the new content between 'f-' and '-f', like this example: 'f-10.07-f'\n
+          For the 'conn_memory_int' add the new content between 'i-' and '-i', like this example: 'i--34-i'\n
+          For the 'conn_memory_bool' add the new content between 'b-' and '-b', like this example: 'b-true-b'\n
+          Use the input 'x13x' and any of the previous estructures to modify the memory variables\n
+          For instance: 'x13x s-mouse-s f-10.07-f i--34-i b-true-b'\n
+          You can use the input 'x6x' to see the changes, and this rule for adding different data.\n
+          If the capture RegEx does not detect anything (no hits),\n
+          no data is loaded into the variables and they should contain the previous value.\n
+          This one of capturing data is for the RegEx used in this example, you can add any RegEx for capturing data\n\n"
+        capturing_data:
+          enable: yes
+          captures:
+            - regex: (?<=s-)(.*?)(?=-s)
+              mem_var_name: conn_memory_string
+            - regex: (?<=f-)[-+]?[0-9]*\.?[0-9]+.(?=-f)
+              mem_var_name: conn_memory_float
+            - regex: (?<=i-)-*[0-9]+(?=-i)
+              mem_var_name: conn_memory_int
+            - regex: (?<=b-)([tT]rue)*([ff]alse)*(?=-b)
+              mem_var_name: conn_memory_bool
+
+      - id: 21
+        regex: x14x
+        mode: sync
+        response:
+          "\nlope-> Memory variables can be defined and initialized using fixed values, or autogenerated.\n
+          For example, in this connection these memory variables are autogenerated:\n
+          - 'another_token': {{another_token}} (6 char length, alphanumeric mixing lowercase and uppercase letters)\n
+          - 'random_float': {{random_float}} (value between '0' and '1')\n
+          - 'random_int': {{random_int}} (value between '0' and '100')\n
+          - 'random_bool': {{random_bool}}
+          \n\n"
+
+      - id: 22
+        regex: x15x
+        mode: sync
+        response:
+          "\nlope-> We have seen that rules can trigger other rules depending on some conditions (set of memory variables)\n
+          with specific values. However, you can have a kind of switch control flow mechanism for using one rule (or set of rules)\n
+          or others depending on some set of conditions. In this case, depending on the value of 'conn_memory_string', different rules\n
+          are triggered (you can modify the content of that memory variable using the input 'x13x s-XXXX-s', where XXXX is the content to add).\n
+          In this case, the values expected are:\n
+          - chicken => it triggers a rule for drawing a chicken (this options also requires that 'conn_memory_int' should be '5')\n
+          - monkey => it triggers a rule for drawing a monkey\n
+          - any other content => it triggers a rule for drawing a pig\n
+          \n\n"
+
+        # Switch for executing some async (or hybrid) rules depending on conditions. E.g., ff memory variable 'AAAA' has the value 'X' (value field), or has the same content
+        # of the memory variable 'BBB', then execute the async Rule 'N'. In case no option fits, use the async rule of the default field (if present and greater than 0)
+        async_switch:
+          options:
+            # first option or 'case' wit a list of conditions to satisfy
+            - conditions:
+                - var_name: conn_memory_string
+                  value: chicken
+                - var_name: conn_memory_int
+                  value: 5
+              # if conditions are satisfied, then a set of async (or hybrid) rules to execute
+              rules:
+                - rule_id: 22
+                  delay: 1
+
+            # second option or 'case'
+            - conditions:
+                - var_name: conn_memory_string
+                  value: monkey
+              rules:
+                - rule_id: 23
+                  delay: 1
+
+          default:
+            # set of async ruls to execute if no 'case' statement is applicable
+            - rule_id: 24
+              delay: 1
+
+      - id: 23
+        mode: async
+        response: "
+          \nlope-> \n
+          .      ,~.\n
+          .   ,-'__ `-,\n
+          .   {,-'  `. }              ,')\n
+          .  ,( a )   `-.__         ,',')~,\n
+          . <=.) (         `-.__,==' ' ' '}\n
+          .   (   )                      /\n
+          .    `-'\\   ,                  )\n
+          .        | \\        `~.      /\n
+          .         \\   `._       \\    /\n
+          .          \\     `._____,'   /\n
+          .           `-.            ,'\n
+          .              `-.      ,-'\n
+          .                 `~~~~'\n
+          .                  //_||\n
+          .               __//--'/`          hjw from ascii-art.de\n
+          .              ,--'/`  '\n
+          .                 '
+          \n\n"
+
+      - id: 24
+        mode: async
+        response: "
+          \nlope-> \n
+          .     w  c(..)o   (\n
+          .      \\__(-)    __)\n
+          .         /\\   (\n
+          .        /(_)___)\n
+          .        w /|\n
+          .        | \\\n
+          ejm97    m  m\n
+          from asciiart.eu\n\n"
+
+      - id: 25
+        mode: async
+        response: "
+          \nlope-> \n
+          .   _____\n
+          ^..^     \\9\n
+          (oo)_____/\n
+          .  WW  WW\n
+          from asciiart.eu\n\n"
+
+      - id: 26
+        regex: x16x
+        mode: sync
+        response:
+          "\nlope-> For conditional executions and switch information flow control mechanism, you can compare variables to check if the have the same value.\n
+          This rule triggers an async rule if the 'conn_memory_int' variable has the same content of the memory variable 'random_int'; and \n
+          'conn_memory_float' has the same content of 'random_float'. Modify the content of 'conn_memory_int' to match 'random_int', \n
+          and the content of 'conn_memory_float' to match 'random_float'. You can do it by using the input 'x13x f-YYYY-f i-XXXX-i',\n
+          where 'XXXX' is the new value for the int, and 'YYYY' for the float. You can check the content of 'random_int' and 'random_float' by using 'x14x'
+          \n\n"
+        trigger:
+          - rule_id: 27
+
+      - id: 27
+        mode: async
+        response: "\nlope-> I am the rule number '26'! executed asynchronously only if 'conn_memory_int'=='random_int' and 'conn_memory_float'=='random_float' \n\n"
+        memory:
+          conditions:
+            - var_name: conn_memory_int
+              reference_variable: random_int
+            - var_name: conn_memory_float
+              reference_variable: random_float
+
+      # ========================================================================================
+      # MEMORY VARIABLES: GLOBAL LEVEL
+      # ========================================================================================
+      - id: 28
+        regex: x17x
+        mode: sync
+        response:
+          "\nlope-> The variables that we have seen so far at 'connection level'. This means their scope is only the connection or session where they live.\n
+          However, there are other kind of variables that are shared among all different connections or sessions of one external connector: 'Global variables'\n
+          For this execution of the external connector, these are the global memory variables in use:\n
+          - 'global_memory_string': {{global_memory_string}}\n
+          - 'global_memory_float': {{global_memory_float}}\n
+          - 'global_memory_int': {{global_memory_int}}\n
+          - 'global_memory_bool': {{global_memory_bool}}\n
+          There are not differences for the connection level ones at the time of using them. The difference is how they are declared in the conversation rule file.\n
+          \n\n"
+
+      - id: 29
+        regex: x18x
+        mode: sync
+        response:
+          "\nlope-> Everything that we have seen is applicable for the any kind of memory variables. For instance, you can modify the values in the same way with this rule\n
+          (rule number 28 - input 'x18x'):\n
+          - For the 'global_memory_string' add the new content between 's-' and '-s', like this example: 's-mouse-s'\n
+          - For the 'global_memory_float' add the new content between 'f-' and '-f', like this example: 'f-10.07-f'\n
+          - For the 'global_memory_int' add the new content between 'i-' and '-i', like this example: 'i--34-i'\n
+          - For the 'global_memory_bool' add the new content between 'b-' and '-b', like this example: 'b-true-b'\n
+          Use the input 'x17x' to see the changes, and this rule for adding different data. If the capture RegEx does not detect anything (no hits),\n
+          no data is loaded into the variables and they should contain the previous value\n\n"
+        capturing_data:
+          enable: yes
+          captures:
+            - regex: (?<=s-)(.*?)(?=-s)
+              mem_var_name: global_memory_string
+            - regex: (?<=f-)[-+]?[0-9]*\.?[0-9]+.(?=-f)
+              mem_var_name: global_memory_float
+            - regex: (?<=i-)-*[0-9]+(?=-i)
+              mem_var_name: global_memory_int
+            - regex: (?<=b-)([tT]rue)*([ff]alse)*(?=-b)
+              mem_var_name: global_memory_bool
+
+      - id: 30
+        regex: x19x
+        mode: sync
+        response:
+          "\nlope-> As mentioned, you can execute conditionally rules depending on the values of the global variables. For instance, this rule trigger an async rule that is only executed\n
+          if the 'global_memory_string'=='rhino'. To check the current value of that variable, use 'x17x'. To modify the value, use 'x18x s-rhino-s'\n\n"
+        trigger:
+          - rule_id: 31 # Next rule to execute
+
+      - id: 31
+        mode: async
+        response: "\nlope-> Since 'global_memory_string'=='rhino', this async rule is successfully executed!\n\n"
+        memory:
+          conditions:
+            - var_name: global_memory_string
+              value: "rhino"
+
+      # ========================================================================================
+      # MEMORY VARIABLES: MULTI CONNECTOR LEVEL
+      # ========================================================================================
+      - id: 32
+        regex: x20x
+        mode: sync
+        response:
+          "\nlope-> The 'Multi connector memory variables' are those with the widest scope:\n
+          They are shared among different external connectors. You can use them in the same\n
+          way that you are using the rest of them, and they can be quite useful to share information among them\n
+          (e.g.: session information), or conditionally execute\n
+          some conversation rules in one external connector depending on what has happened in other external conenctor. \n
+          In that sense, they can work really together\n
+          These variables requires the use of a REDIS server to achieve this. For this execution, these are the variables:\n
+          - 'multi_memory_string': {{multi_memory_string}}\n
+          - 'multi_memory_float': {{multi_memory_float}}\n
+          - 'multi_memory_int': {{multi_memory_int}}\n
+          - 'multi_memory_bool': {{multi_memory_bool}}\n\n"
+
+      - id: 33
+        regex: x21x
+        mode: sync
+        response:
+          "\nlope-> You can modify the multi connector memory values in the same way with this rule (rule number 32 - input 'x21x'):\n
+          For the 'multi_memory_string' add the new content between 's-' and '-s', like this example: 's-mouse-s'\n
+          For the 'multi_memory_float' add the new content between 'f-' and '-f', like this example: 'f-10.07-f'\n
+          For the 'multi_memory_int' add the new content between 'i-' and '-i', like this example: 'i--34-i'\n
+          For the 'multi_memory_bool' add the new content between 'b-' and '-b', like this example: 'b-true-b'\n
+          Use the input 'x20x' to see the changes, and this rule for adding different data. \n
+          If the capture RegEx does not detect anything (no hits),\n
+          no data is loaded into the variables and they should contain the previous value\n\n"
+        capturing_data:
+          enable: yes
+          captures:
+            - regex: (?<=s-)(.*?)(?=-s)
+              mem_var_name: multi_memory_string
+            - regex: (?<=f-)[-+]?[0-9]*\.?[0-9]+.(?=-f)
+              mem_var_name: multi_memory_float
+            - regex: (?<=i-)-*[0-9]+(?=-i)
+              mem_var_name: multi_memory_int
+            - regex: (?<=b-)([tT]rue)*([ff]alse)*(?=-b)
+              mem_var_name: multi_memory_bool
+
+      - id: 34
+        regex: x22x
+        mode: sync
+        response:
+          "\nlope-> As mentioned previously, you can execute conditionally rules depending on the values of the multi connector variables as well.\n
+          For instance, this rule trigger an async rule that is onlye executed\n
+          if the 'multi_memory_float'=='14.14'. To check the current value of that variable, use 'x20x'. To modify the value, use 'x21x f-14.14-f'\n\n"
+        trigger:
+          - rule_id: 35 # Next rule to execute
+
+      - id: 35
+        mode: async
+        response: "\nlope-> Since 'multi_memory_float'=='14.14', this async rule is successfully executed!\n\n"
+        memory:
+          conditions:
+            - var_name: multi_memory_float
+              value: 14.14
+
+      # ========================================================================================
+      # SESSION SUPPORT
+      # ========================================================================================
+      - id: 36
+        regex: x23x
+        mode: sync
+        response:
+          "\nlope-> When session support is enabled in server mode, there is a session id generated for each connection depending on the configuration.\n
+          The different options supported are:'numbers', 'hex_lower', 'hex_upper', 'hex_mix', 'alphanumeric_upper', 'alphanumeric_lower'(default), 'alphanumeric_mix',\n
+          'alphanumeric_and_symbols_upper', 'alphanumeric_and_symbols_lower', 'alphanumeric_and_symbols_mix'. You can check it by using\n
+          2x'{' + SESSION_KEY + 2x'}' and 2x'{' + SESSION_VALUE + 2x'}' in any response.
+          \nThis value is used to detect if a new request belongs to a certain connection/session in some scenarios.\n
+          In the current session, the session key and value is: {{SESSION_KEY}}:{{SESSION_VALUE}};\n
+          In client mode, the session ID is captured using the 'capturing' capability of the memory variables. In that sense,\n
+          it works in this way: external input content ==> memory variable ==> sessiond ID. However, you can modify the session ID in other different ways.\n
+          Usually, any session modification can be executed ince the rule is detected or executed, depending on the configuration.\n
+          This rule is going to trigger 2 async rules to show the different ways of updating the session id\n\n"
+        trigger:
+          - rule_id: 37 # Next rule to execute
+        delay: 1 # sec
+
+      - id: 37
+        mode: async
+        trigger:
+          - rule_id: 38 # Next rule to execute
+        delay: 1 # sec
+        response: "\nlope-> This rule is generating a new session ID according with the current configuration. The new session ID is: {{SESSION_KEY}}:{{SESSION_VALUE}};\n\n"
+        session_update:
+          enable: yes # yes/no (default)
+          autogenerated_value: yes # yes/no (default), only used when 'memory_variable' is empty
+
+      - id: 38
+        mode: async
+        response:
+          "\nlope-> This rule is using a fixed value for updating the session ID, as it is defined in the corresponding rule. \n
+          The new session ID is: {{SESSION_KEY}}:{{SESSION_VALUE}};\n
+          As described previously, the session update can use a memory variable. \n
+          You can use the same rule to update the memory variable and then, the session id,\n
+          or you can do in different rules at different times. \n
+          For instance, if you ure the input 'x24x g_XXXXXXX_g' (where 'XXXXXXX' is anything that you want to add: numbers and letters)\n
+          this new content will be the new session id by \n
+          using the memory variable 'conn_memory_string'. The memory variables are always updated before the session\n\n"
+        session_update:
+          enable: yes # yes/no (default)
+          fixed_value: qmpzenixnructbyv1029384756
+
+      - id: 39
+        mode: sync
+        regex: x24x
+        response:
+          "\nlope-> This rule can capture new session IDs using what is within g_XXXX_g with this input: 'x24x g_XXXX_g',\n
+          where 'XXXX' is the value. Current session ID => {{SESSION_KEY}}:{{SESSION_VALUE}};\n
+          (if the capturing process is successful, you will see the new values)\n\n"
+        capturing_data:
+          enable: yes
+          captures:
+            - regex: (?<=g_)(.*?)(?=_g)
+              mem_var_name: conn_memory_string
+        session_update:
+          enable: yes # yes/no (default)
+          memory_variable: conn_memory_string # memory variable to use (CASE SENSITIVE)
+
+      # ========================================================================================
+      # CUSTOM FUNCTIONS
+      # ========================================================================================
+      - id: 40
+        mode: sync
+        regex: x25x
+        response:
+          "\nlope-> There is support for adding your own python code via 'custom functions'. \n
+          This functions can be executed when a rule is detected or executed,\n
+          depending on the configuration. They use the memory variables as arguments, \n
+          and the output is loaded in memory variables as well. Additionally,\n
+          the ip and port of the connection can be used, as well as the external input received from the connection.\n
+          Custom functions execute after memory update and before session update (provided that all are configured \n
+          to be executed when the rule is detected, or when the rule is executed).\n
+          There is a special option that is adding a 'preprocessor', that is a custom function executed in  \n
+          all functions before doing anything. The next rule\n
+          (input 'x26x' - rule 40) will call a custom modify that modifies the global variables to add the \n
+          input as 'global_memory_string', it will add '1.5' to the current\n
+          value of 'global_memory_float', it will add '5' to the current value of 'global_memory_int'; \n
+          and it will invert the value of 'global_memory_bool'.\n
+          To can check the current values before calling the next rule using 'x17x', calling the 'x26x'; \n
+          and later on, reuse the input 'x17x' again\n\n"
+
+      - id: 41
+        mode: sync
+        regex: x26x
+        response:
+          "\nlope-> New values of the global memory variables in use after the execution the custom function:\n
+          - 'global_memory_string': {{global_memory_string}}\n
+          - 'global_memory_float': {{global_memory_float}}\n
+          - 'global_memory_int': {{global_memory_int}}\n
+          - 'global_memory_bool': {{global_memory_bool}}\n
+          However, the 'global_memory_string' is different from the original input added. \n
+          The reason is because there is a custom function working as preprocessor\n
+          that adds a 'prepocessor_check' string at the end of any input received\n\n"
+        custom_function:
+          enable: yes
+          name: neo_test
+          input:
+            - EXT_IN
+            - global_memory_float
+            - global_memory_int
+            - global_memory_bool
+          output:
+            - global_memory_string
+            - global_memory_float
+            - global_memory_int
+            - global_memory_bool
+
+      - id: 42
+        mode: sync
+        regex: x27x
+        response:
+          "\nlope-> The preprocessor and the postprocessor functions are custom functions to be executed in any input and output respectively.\n
+          They can get memory variables as additional parameters, and returns parameters to be added in memory variables.\n
+          In this example, the preprocessor add a sufix to any input and it updates a counter of how many inputs have been received so far.\n
+          The postprocessor is counting how many replies has been done so far. \n
+          Both works in the same way, they get the corresponding counter as input, add 1, and then it returns it.\n
+          Apart from returning the corresponding input/output\n
+          Current values of the currents:\n
+          - 'input_counter': {{input_counter}} (first connection counts as input)\n
+          - 'output_counter': {{output_counter}}
+          \n\n"
+        reconnect_before_rule_execution: yes
+
+      # ========================================================================================
+      # RECONNECTION, CLOSING CONECTION SOCKET & ENDING CONNECTION
+      # ========================================================================================
+      - id: 43
+        mode: sync
+        regex: x28x
+        response:
+          "\nlope-> This is a rule that closes the connection and reconnects again before executing the rule. This feature works when the operation mode is 'client',\n
+          and the response should contain the session id: {{SESSION_KEY}}:{{SESSION_VALUE}}; to be used for identifying the connection again after the reconnection.\n\n"
+        reconnect_before_rule_execution: yes
+
+      - id: 44
+        mode: sync
+        regex: x29x
+        response:
+          "\nlope-> This is a rule that closes the connection, but not ends it. It means the physical connection is closed (the socket), but not logically.\n
+          This feature works when the operation mode is 'server' and the attribute 'enable_rule_triggered_closing_socket_connection' is enabled;\n
+          and it closes the connection as needed (in contrast of the feature to close the connection after any response).\n
+          Then, the client should reconnect and provide the corresponding session ID to go on with the active logic connection\n\n"
+        closing_connection: yes
+
+      - id: 45
+        mode: sync
+        regex_b64: yes # yes/no (default)
+        regex: eDMweA==
+        response_b64: yes # yes/no (default)
+        response: "XG5sb3BlLT4gQ29udmVyc2F0aW9uIHJ1bGVzIGNhbiBoYXZlIFJlZ0V4IGluIGI2NCBmb3JtYXQsIGFzIHdlbGwgYXMgdGhlIGNvcnJlc3BvbmRpbmcgYW5zd2VyLCBsaWtlIHRoaXMgb25lIChpZiBlbmFibGVkKVxuXG4="
+
+      - id: 46
+        mode: sync
+        regex: x31x
+        response: "\nlope-> This is the ending rule, and it closes and ends the connection. Therefore, the basic conversation rule 'ending' is executed (if enabled)\n\n"
+        ending_rule: yes
+
+      # ========================================================================================
+      # ASYNC LOOP & FORK
+      # ========================================================================================
+      - id: 102
+        mode: sync
+        regex: n1n
+        response: "\nlope-> This rule creates an async loop.\n
+          It calls an async rule every second to tic as a clock while the memory variable 'conn_memory_string'= 'clock' \n\n"
+        async_loop:
+          loop:
+            conditions:
+              - var_name: conn_memory_string
+                value: "clock"
+            rules:
+              - rule_id: 103
+                delay: 1
+
+      - id: 103
+        mode: async
+        response: "\nlope-> TIC...\n\n"
+
+      - id: 104
+        mode: sync
+        regex: n2n
+        response:
+          "\nlope-> This rule starts a new external connector instance, but since it is using the same\n
+          configuration file and the same port, it cannot work (and then, it will shutdown)\n\n"
+        fork:
+          enable: yes
+          new_id: "Broken"
+
+    groups:
+      - id: test-y
+        regex: y[0-9]+y
+        rules:
+          - id: 200
+            mode: sync
+            regex: y1y
+            response: "\nlopeY-> This is the first rule of the group 'test-y' for string operations!\n\n"
+
+          - id: 201
+            mode: sync
+            regex: y2y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_CONCAT
+              input:
+                - " _"
+                - EXT_IN
+                - "_"
+                - another_token
+                - "_"
+                - "Lope_Rules!"
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule is concatenating the input, the memory variable generated randomly, a fixed string; and an empty blanck space at the beginning.\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 202
+            mode: sync
+            regex: y3y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_REPLACE
+              input:
+                - string_result
+                - "Lope_Rules!"
+                - "SecLope_Rules!"
+              output:
+                - string_result
+            response: "\nlopeY-> This rule replaces the fixed string added in the previous rule (id:'201'-input:'y2y'), by a new one.\n Result: '{{string_result}}'\n\n"
+
+          - id: 203
+            mode: sync
+            regex: y4y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_SUBTRACT
+              input:
+                - string_result
+                - "SecLope_Rules!"
+              output:
+                - string_result
+            response: "\nlopeY-> This rule replaces the fixed string added in the previous rule (id:'202'-input:'y3y'), by a new one.\n Result: '{{string_result}}'\n\n"
+
+          - id: 204
+            mode: sync
+            regex: y5y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_UPPER
+              input:
+                - string_result
+              output:
+                - string_result
+            response: "\nlopeY-> This rule puts in cappital letters the content of the memory variable 'string_result'.\n Result: '{{string_result}}'\n\n"
+
+          - id: 205
+            mode: sync
+            regex: y6y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_LOWER
+              input:
+                - string_result
+              output:
+                - string_result
+            response: "\nlopeY-> This rule puts in lowercase the content of the memory variable 'string_result'.\n Result: '{{string_result}}'\n\n"
+
+          - id: 206
+            mode: sync
+            regex: y7y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_SPLIT
+              input:
+                - string_result
+                - "_"
+              output:
+                - string_result1
+                - string_result2
+                - string_result3
+            response:
+              "\nlopeY-> This rule splits the string 'string_result' in three different memory variables, separarating via '_':\n
+              - 'string_result1': {{string_result1}}\n
+              - 'string_result2': {{string_result2}}\n
+              - 'string_result3': {{string_result3}}\n
+              The last one can be empty if the rules id:'202' and '203' (input:'y3y' and 'y4y') have been executed previously\n\n"
+
+          - id: 207
+            mode: sync
+            regex: y8y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_TRIM
+              input:
+                - string_result
+              output:
+                - string_result
+            response: "\nlopeY-> This rule trims the content of the memory variable 'string_result'.\n Result: '{{string_result}}'\n\n"
+
+          - id: 208
+            mode: sync
+            regex: y9y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_MATCH
+              input:
+                - string_result
+                - y[0-9]+y
+              output:
+                - bool_result
+            response:
+              "\nlopeY-> This rule checks is a RegEx does a match in a memory variable, puting the result in another memory variable 'bool_result'.\n
+              In this case, we are checking if the memory variable is doing match for the RegEx 'y[0-9]+y'. Result: '{{bool_result}}'\n\n"
+
+          - id: 209
+            mode: sync
+            regex: y10y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_CAPTURE
+              input:
+                - string_result
+                - y[0-9]+y
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule captures a certain information from a memory variable using a RegEx does a match in a memory variable, \n
+              in a similar way the bultin capturing functionality of the rules but over an existing memory variable or the input;\n
+              and adding the content in 'string_result'. The regex in use is this one: 'y[0-9]+y', so in this case only that part of \n
+              the content of the memory variable will remain'\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 210
+            mode: sync
+            regex: y11y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_COUNT
+              input:
+                - string_result
+              output:
+                - number_result
+            response:
+              "\nlopeY-> This rule counts the number of characters of a memory variable, in this case 'string_result'.\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 211
+            mode: sync
+            regex: y12y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_MODE
+              input:
+                - "dog"
+                - "cat"
+                - "dog"
+                - "monkey"
+                - "cat"
+                - "bird"
+                - "dog"
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule calculates the mode (central tendency) of a given nominal data set, and it saves it in 'string_result'.\n
+              In this case, it does that from the following data set:\n
+              - 'dog'\n
+              - 'cat'\n
+              - 'dog'\n
+              - 'monkey'\n
+              - 'cat'\n
+              - 'bird'\n
+              - 'dog'\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 212
+            mode: sync
+            regex: y13y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_ENCODE_B64
+              input:
+                - string_result
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule encodes the content of 'string_result' in base 64.\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 213
+            mode: sync
+            regex: y14y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_DECODE_B64
+              input:
+                - string_result
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule decodes the content of 'string_result' encoded in base 64 for the previous rule (id:'211' - input: 'y12y').\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 214
+            mode: sync
+            regex: y15y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_ENCODE_HEX
+              input:
+                - string_result
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule encodes the content of 'string_result' in hexadecimal.\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 215
+            mode: sync
+            regex: y16y
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_DECODE_HEX
+              input:
+                - string_result
+              output:
+                - string_result
+            trigger:
+              - rule_id: 216
+            response:
+              "\nlopeY-> This rule decodes the content of 'string_result' encoded in hexadecimal for the previous rule (id:'214' - input: 'y15y').\n
+              Result: '{{string_result}}'\n\n"
+
+          - id: 216
+            mode: async
+            builtin_memory_operation:
+              enable: yes
+              operation: STR_CONCAT
+              input:
+                - string_result
+                - "_Lope_is_great!"
+              output:
+                - string_result
+            response:
+              "\nlopeY-> This rule is an async rule that concat a new text, triggered by the rule (id:'215' - input: 'y16y').\n
+              It adds a new fixed text at the end of the string as memory operation. Async rules can do built-in memory operations as well.\n
+              Result: '{{string_result}}'\n\n"
+
+      - id: test-z
+        regex: z[0-9]+z
+        rules:
+          - id: 300
+            mode: sync
+            regex: z1z
+            response: "\nlopeZ-> This is the first rule of the group 'test-z' for number operations!\n\n"
+
+          - id: 301
+            mode: sync
+            regex: z2z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_SUM
+              input:
+                - random_float
+                - random_int
+                - 5
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule does a sum of values, in this case the content of 'random_float', 'random_int' and a fixed value ('5')\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 302
+            mode: sync
+            regex: z3z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_SUBTRACT
+              input:
+                - number_result
+                - 5
+                - random_float
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule substract a fixed vale from the value ('5') from 'number_result', and the vale of the memory variable 'random_float'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 303
+            mode: sync
+            regex: z4z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MULTIPLY
+              input:
+                - number_result
+                - 5
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule miltiplies by '5' the content of 'number_result'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 304
+            mode: sync
+            regex: z5z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_DIVIDE
+              input:
+                - number_result
+                - 5
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule divides by '5' the content of 'number_result'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 305
+            mode: sync
+            regex: z6z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_FLOOR
+              input:
+                - number_result
+                - 5
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule does a floor division by '5' of the content of 'number_result'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 306
+            mode: sync
+            regex: z7z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MODULO
+              input:
+                - number_result
+                - 5
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the reminder of doing a division by '5' of the content of 'number_result'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 307
+            mode: sync
+            regex: z8z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_POWER
+              input:
+                - number_result
+                - 2
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the power of two of the current content of 'number_result'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 308
+            mode: sync
+            regex: z9z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_INVERSE_SIGN
+              input:
+                - number_result
+              output:
+                - number_result
+            response: "\nlopeZ-> This rule changes the sign of 'number_result'\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 309
+            mode: sync
+            regex: z10z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_GREATER
+              input:
+                - number_result
+                - random_int
+              output:
+                - bool_result
+            response:
+              "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is greater than 'random_int'({{random_int}})\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 310
+            mode: sync
+            regex: z11z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_LOWER
+              input:
+                - number_result
+                - random_int
+              output:
+                - bool_result
+            response:
+              "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is lower than 'random_int'({{random_int}})\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 311
+            mode: sync
+            regex: z12z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_GREATEREQ
+              input:
+                - number_result
+                - random_int
+              output:
+                - bool_result
+            response:
+              "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is greater or equal than 'random_int'({{random_int}})\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 312
+            mode: sync
+            regex: z13z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_LOWEREQ
+              input:
+                - number_result
+                - random_int
+              output:
+                - bool_result
+            response:
+              "\nlopeZ-> This rule checks if 'number_result'({{number_result}}) is lower or equal than 'random_int'({{random_int}})\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 313
+            mode: sync
+            regex: z14z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MEAN
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the arithmetic mean (average) of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 314
+            mode: sync
+            regex: z15z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_GEOMETRIC_MEAN
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the geometric mean of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 315
+            mode: sync
+            regex: z16z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_HARMONIC_MEAN
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the harmonic mean of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 316
+            mode: sync
+            regex: z17z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MEDIAN
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the median of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 317
+            mode: sync
+            regex: z18z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MEDIAN_LOW
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the low median value of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 318
+            mode: sync
+            regex: z19z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MEDIAN_HIGH
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the high median value of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 319
+            mode: sync
+            regex: z20z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MEDIAN_GROUPED
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the grouped median value of a set of values (calculated as the 50th percentile). In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 320
+            mode: sync
+            regex: z21z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_MODE
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the mode of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 321
+            mode: sync
+            regex: z22z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_POP_STD_DEV
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the standard deviation form an entire population of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 322
+            mode: sync
+            regex: z23z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_STD_DEV
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the standard deviation form a data set of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 323
+            mode: sync
+            regex: z24z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_POP_VAR
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the variance form an entire population of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+          - id: 324
+            mode: sync
+            regex: z25z
+            builtin_memory_operation:
+              enable: yes
+              operation: NBR_VAR
+              input:
+                - 10
+                - 23
+                - 35
+                - 47
+                - 54
+                - 62
+                - 71
+                - 89
+                - 93
+                - random_float
+                - random_int
+                - multi_memory_int
+                - global_memory_int
+                - conn_memory_int
+              output:
+                - number_result
+            response:
+              "\nlopeZ-> This rule gets the variance form a data set of a set of values. In this case:\n
+              - 10\n
+              - 23\n
+              - 35\n
+              - 47\n
+              - 54\n
+              - 62\n
+              - 71\n
+              - 89\n
+              - 93\n
+              - 'random_float' ({{random_float}})\n
+              - 'random_int' ({{random_int}})\n
+              - 'multi_memory_int' ({{multi_memory_int}})\n
+              - 'global_memory_int' ({{global_memory_int}})\n
+              - 'conn_memory_int' ({{conn_memory_int}})\n
+              Result: '{{number_result}}'\n\n"
+
+      - id: test-q
+        memory_conditions: # Memory conditions that make the group applicable
+          - var_name: enable_bool_operations
+            value: true
+        rules:
+          - id: 400
+            mode: sync
+            regex: q1q
+            response:
+              "\nlopeQ-> This is the first rule of the group 'test-q' for boolean operations!\n
+              This group of rules can only be used if the memory variable 'enable_bool_operations' is 'true' \n\n"
+
+          - id: 401
+            mode: sync
+            regex: q2q
+            builtin_memory_operation:
+              enable: yes
+              operation: LGC_AND
+              input:
+                - random_bool
+                - multi_memory_bool
+                - global_memory_bool
+                - conn_memory_bool
+                - bool_result
+                - true
+              output:
+                - bool_result
+            response:
+              "\nlopeQ-> This rules an AND operation of the following values:\n
+              - 'random_bool' ({{random_bool}})\n
+              - 'multi_memory_bool' ({{multi_memory_bool}})\n
+              - 'global_memory_bool' ({{global_memory_bool}})\n
+              - 'conn_memory_bool' ({{conn_memory_bool}})\n
+              - 'bool_result' ({{bool_result}})\n
+              - true (fixed value)\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 402
+            mode: sync
+            regex: q3q
+            builtin_memory_operation:
+              enable: yes
+              operation: LGC_OR
+              input:
+                - random_bool
+                - multi_memory_bool
+                - global_memory_bool
+                - conn_memory_bool
+                - bool_result
+                - true
+              output:
+                - bool_result
+            response:
+              "\nlopeQ-> This rules an OR operation of the following values:\n
+              - 'random_bool' ({{random_bool}})\n
+              - 'multi_memory_bool' ({{multi_memory_bool}})\n
+              - 'global_memory_bool' ({{global_memory_bool}})\n
+              - 'conn_memory_bool' ({{conn_memory_bool}})\n
+              - 'bool_result' ({{bool_result}})\n
+              - true (fixed value)\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 403
+            mode: sync
+            regex: q4q
+            builtin_memory_operation:
+              enable: yes
+              operation: LGC_XOR
+              input:
+                - random_bool
+                - multi_memory_bool
+                - global_memory_bool
+                - conn_memory_bool
+                - bool_result
+                - true
+              output:
+                - bool_result
+            response:
+              "\nlopeQ-> This rules a XOR operation of the following values:\n
+              - 'random_bool' ({{random_bool}})\n
+              - 'multi_memory_bool' ({{multi_memory_bool}})\n
+              - 'global_memory_bool' ({{global_memory_bool}})\n
+              - 'conn_memory_bool' ({{conn_memory_bool}})\n
+              - 'bool_result' ({{bool_result}})\n
+              - true (fixed value)\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 404
+            mode: sync
+            regex: q5q
+            builtin_memory_operation:
+              enable: yes
+              operation: LGC_NAND
+              input:
+                - random_bool
+                - multi_memory_bool
+                - global_memory_bool
+                - conn_memory_bool
+                - bool_result
+                - true
+              output:
+                - bool_result
+            response:
+              "\nlopeQ-> This rules a NAND operation of the following values:\n
+              - 'random_bool' ({{random_bool}})\n
+              - 'multi_memory_bool' ({{multi_memory_bool}})\n
+              - 'global_memory_bool' ({{global_memory_bool}})\n
+              - 'conn_memory_bool' ({{conn_memory_bool}})\n
+              - 'bool_result' ({{bool_result}})\n
+              - true (fixed value)\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 405
+            mode: sync
+            regex: q6q
+            builtin_memory_operation:
+              enable: yes
+              operation: LGC_NOR
+              input:
+                - random_bool
+                - multi_memory_bool
+                - global_memory_bool
+                - conn_memory_bool
+                - bool_result
+                - true
+              output:
+                - bool_result
+            response:
+              "\nlopeQ-> This rules a NOR operation of the following values:\n
+              - 'random_bool' ({{random_bool}})\n
+              - 'multi_memory_bool' ({{multi_memory_bool}})\n
+              - 'global_memory_bool' ({{global_memory_bool}})\n
+              - 'conn_memory_bool' ({{conn_memory_bool}})\n
+              - 'bool_result' ({{bool_result}})\n
+              - true (fixed value)\n
+              Result: '{{bool_result}}'\n\n"
+
+          - id: 406
+            mode: sync
+            regex: q7q
+            builtin_memory_operation:
+              enable: yes
+              operation: LGC_NOT
+              input:
+                - enable_bool_operations
+              output:
+                - enable_bool_operations
+            response:
+              "\nlopeQ-> This rules do a NOT operation over the variable 'enable_bool_operations'.\n
+              This means the boolean operations will be disabled for this connection, and they cannot be used anymore\
+              Sorry!\n
+              Current value: '{{enable_bool_operations}}'\n\n"
+
+  # to be executed if an input is not applicable to any conversation rule
+  default:
+    value: "\nlope-> No rule described for the input, so this is the default rule\n\n"
+    enable: yes # yes/no (default)
+
+  # to be executed if an empty input is received
+  empty:
+    value: "\nlope-> No input content detected, so this rule is executed when a new input is received but there is nothing within it\n\n"
+    enable: yes # yes/no (default)
+
+  timeout:
+    value: "\nlope-> The connection has been timed out! That's why this rule is executed\n\n"
+    enable: yes # yes/no (default)
+
+  ending:
+    value: "\nlope-> The connection has ended as expected, so this is the rule for the connection end: sayonara baby!\n\n"
+    enable: yes # yes/no (default)

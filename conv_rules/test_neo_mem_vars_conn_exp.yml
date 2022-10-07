@@ -1,0 +1,30 @@
+
+connection_level: # Each connection / session get a different set of variables
+  - name: string_result
+    type: string
+    report: no
+
+  - name: string_result1
+    type: string
+    report: no
+
+  - name: string_result2
+    type: string
+    report: no
+
+  - name: string_result3
+    type: string
+    report: no
+
+  - name: number_result
+    type: float
+    report: no
+
+  - name: bool_result
+    type: bool
+    report: no
+
+  - name: enable_bool_operations
+    type: bool
+    report: no
+    default_value: true

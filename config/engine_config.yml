@@ -1,0 +1,274 @@
+# ======================================================================================================
+# CONFIGURATION FILE OF ENGINE
+# ======================================================================================================
+external_activity_signature:
+  yes # yes/no(default) If it is required to save the external activities received
+  # with a digital signature
+
+# configuration about the external connectors, depending on the group they belong.
+# if they belong to some specific group, the corresponding conversation rules are loaded
+# The group is described in the conversation rules file
+external_connectors:
+  # not include the final '/', do not use '.'. For using the current folder, use only this ""
+  conv_rules_folder:
+    path: "/conv_rules"
+    is_relative_path: yes
+
+  # configuration about the number of external connectors and workers
+  max_number_of_workers: 200 # pool size
+  max_number_of_external_connectors_connected: 15
+
+  # This is the password for those external connectors that do not belong to any group, they will use the
+  # 'default conversation rules' 
+  default_secret: "3sT0_3S_s3Cr3t0!"
+
+  # one group
+  groups:
+    - id: "test_client"
+      list:
+        - id: "ExtConTest_Client"
+          secret: "3sT0_3S_s3Cr3t0!"
+
+    - id: "test_server"
+      list:
+        - id: "ExtConTest_Server"
+          secret: "3sT0_3S_s3Cr3t0!"
+
+    - id: "test_neo2"
+      list:
+        - id: "ExtConTest4"
+          secret: "3sT0_3S_s3Cr3t0!"
+
+    # another group
+    - id: "B"
+      list:
+        - id: "ExtConX"
+          secret: "3sT0_3S_s3Cr3t0!"
+
+        - id: "ExtConY"
+          secret: "3sT0_3S_s3Cr3t0!"
+
+networking:
+  # 0MQ Server
+  mq:
+    port: 5555
+    ipv6 : no # use ipv6? yes/no (default)
+    connection_encrypted: no # yes/no(default) For the connections between external connectors and the engine
+    rsa_key_lengt: 4096 # Minimum possible value is 2048
+    # for the hash code sent to external connectors to ensure they are talking with right engine
+    engine_auth_code: "Y0_s0y_0zym4nd14s_r3y_d3_r3y3s!"
+
+data_service:
+  max_number_data_workers: 200 # Max number of data workers for the data service. If '0' or negative values, then
+  # the default value is used ('200')
+
+  simple_file_storage:
+    enable: no # yes/no(default)
+    # not include the final '/', do not use '.'. For using the current folder, use only this ""
+    folder_path: "/raw_data"
+    is_relative_path: yes
+    encode_b64: no #yes/no(default). To encode b64 the activities to be saved
+
+  database:
+    # mariadb / mysql: https://github.com/go-sql-driver/mysql
+    enable_sql_db: yes
+    user: root
+    password: toor
+    ip: "127.0.0.1" # or uri
+    port: 3306
+    schema: "slv_engine"
+    # --------------
+    # TLS
+    # --------------
+    tls_config:
+      enable: no
+      ca_cert: ""
+      skip_certificate_verification: no # If a CA o custom CA is in use, they are not self-signed certs (InsecureSkipVerify option)
+      relative_path_for_certificates: yes
+      # For client authentication
+      engine_client_cert: ""
+      engine_client_key: ""
+      engine_client_key_protected: yes
+      engine_client_key_protected_password: ""
+
+alert_service:
+  max_number_alert_workers:
+    200 # Max number of alert workers for the data service. If '0' or negative values, then
+    # the default value is used ('200')
+
+  syslog:
+    enable: no # yes/no(dafult)
+    remote_flag: no # yes/no(dafult)
+    remote_syslog_protocol: "tcp" # One of the following: tcp/udp (default)
+    remote_syslog_server_ip: "localhost" # or domains
+    remote_syslog_server_port: 515
+    tag: "lope"
+    encode_activity_base64: yes # yes/no(default)
+    # --------------
+    # TLS
+    # --------------
+    tls_config:
+      enable: no
+      ca_cert: ""
+      skip_certificate_verification: no # If a CA o custom CA is in use, they are not self-signed certs (InsecureSkipVerify option)
+      relative_path_for_certificates: yes
+      server_name: "" # Domain or Ip of the expected certificate
+      # For client authentication (if applicable)
+      engine_client_cert: ""
+      engine_client_key: ""
+      engine_client_key_protected: yes
+      engine_client_key_protected_password: ""
+
+  http:
+    enable: no
+    url: "http://127.0.0.1"
+    method: GET # One of the following: 'POST'(default),'PUT' or 'GET'
+    timeout: 10 # seconds
+    headers:
+      # header_key: header_value
+      aaa: "aaaa"
+      bbb: "bbb"
+
+    url_parameters: #  Query string parameters. If the activity must be sent via parameters, use '{{ACTIVITY}}' in the parameter value
+      # parameter_key: parameter_value
+      aaa: "aaaa"
+      bbb: "bbb"
+
+    use_body_flag: yes # yes/no(default). This parameter allows to send the activity in the HTTP body, it is recommended to disable it for HTTP GET method
+    encode_activity_base64: yes # yes/no(default)
+    body_intro: # The activity is added after the body intro and before the body end
+      "
+      Hello there! It's Lope!</h2>\n
+      ---------------------------------\n
+      ACTIVITY = "
+    body_end: "
+      \n\n---------------------------------\n
+      "
+    # --------------
+    # TLS
+    # --------------
+    tls_config:
+      enable: no
+      ca_cert: ""
+      skip_certificate_verification: no # If a CA o custom CA is in use, they are not self-signed certs (InsecureSkipVerify option)
+      relative_path_for_certificates: yes
+      server_name: "" # Domain or Ip of the expected certificate
+      # For client authentication (if applicable)
+      engine_client_cert: ""
+      engine_client_key: ""
+      engine_client_key_protected: yes
+      engine_client_key_protected_password: ""
+
+  kafka:
+    enable: no # yes/no(dafult)
+    server_ip: 127.0.0.1 # Or domain
+    server_port: 8888
+    topic: "lope"
+    create_topic_if_not_exist: yes # yes/no(default)
+    distribution: "LEAST_BYTES" # Or balancer, it must be one of the following: 'LEAST_BYTES'(default),'CRC32BALANCER','MURMUR2BALANCER', 'HASH'
+    authentication_mechanism: "NONE" # One of the following: 'PLAIN','SCRAM' or 'NONE'(default)
+    auth_scram_hash: "SHA512" # Only in use for scam authentication, one of the following: 'SHA256' or 'SHA512'(default)
+    event_key: "lope" # topic partition
+    timeout: 10 # seconds
+    user: ""
+    password: ""
+    encode_activity_base64: yes # yes/no(default)
+    # --------------
+    # TLS
+    # --------------
+    tls_config:
+      enable: yes
+      ca_cert: "../tls/ca/certs/ca.crt.pem"
+      skip_certificate_verification: yes # If a CA o custom CA is in use, they are not self-signed certs (InsecureSkipVerify option)
+      relative_path_for_certificates: yes
+      server_name: "" # Domain or Ip of the expected certificate
+      # For client authentication (if applicable)
+      engine_client_cert: "../tls/ca/intermediate/certs/ca-chain_client.crt.pem"
+      engine_client_key: "../tls/ca/intermediate/private/seclopedevega_client.key.pem"
+      engine_client_key_protected: yes
+      engine_client_key_protected_password: "lope"
+
+  email:
+    enable: no # yes/no(dafult)
+    smtp_ip: "smtp.gmail.com" # or domains
+    smtp_port: 587
+    authentication_mechanism: # One of the following: 'PLAIN'(default),'CRAMMD5'
+    # https://pkg.go.dev/net/smtp
+    smtp_plain_auth_identity: ""
+    smtp_auth_user: "seclopedevega@gmail.com"
+    smtp_auth_password: ""
+    smtp_plain_auth_host: "smtp.gmail.com"
+    # email fields
+    from: "seclopedevega@gmail.com"
+    reply_to:
+      - "seclopedevega@gmail.com"
+    to:
+      - ""
+    cc:
+      - ""
+    bcc:
+      - ""
+    subject: "[SecLopeDeVega][Activity Report]"
+    body_intro: # The activity is added after the body intro and before the body end
+      "
+      <h2> Hello there! It's Lope!</h2>\n
+      ---------------------------------\n
+      ACTIVITY = "
+    body_end: "
+      \n\n---------------------------------\n
+      "
+    # --------------
+    # TLS
+    # --------------
+    tls_config:
+      enable: yes 
+      use_start_tls: yes # yes/no(default). 
+      ca_cert: ""
+      skip_certificate_verification: no # If a CA o custom CA is in use, they are not self-signed certs (InsecureSkipVerify option)
+      relative_path_for_certificates: yes
+      server_name: "smtp.gmail.com" # Domain or Ip of the expected certificate
+      # For client authentication (if applicable)
+      engine_client_cert: ""
+      engine_client_key: ""
+      engine_client_key_protected: no
+      engine_client_key_protected_password: ""
+
+logging:
+  # log level, one of the following: TRACE, DEBUG, INFO (default), WARN, ERROR
+  level: "DEBUG"
+  # log mode: CONSOLE (default), FILE, BOTH, FILE_ROTATING or BOTH_ROTATING
+  mode: "CONSOLE"
+  # https://github.com/rs/zerolog#add-file-and-line-number-to-log
+  show_logger_caller: no # yes/no (default)
+  # https://github.com/rs/zerolog#pretty-logging (yes/no)
+  console_human_friendly: yes
+  # to create a different thread for adding information in the logs at the time of logging,
+  # destroyed when the information is added (yes/no)
+  async_logs: no
+  # not include the final '/', do not use '.'. For using the current folder, use only this ""
+  log_folder:
+    path: "/logs"
+    is_relative_path: yes
+  # Log file name utils
+  log_prefix: "" # if not used, it will be 'slv_engine'
+  log_extension: "" # if not used, it will be '.log'
+  # log rotation
+  log_rotation_max_size: 20 # MB
+  log_rotation_number_files: 5
+  log_rotation_max_number_days: 180 # days
+  log_rotation_compress: yes # yes/no(dafult)
+
+# configuration about the Go channels
+go_channels:
+  # size of the buffer of the GO communication channels
+  engine_cockpit_buffer: 30
+  ext_conn_manager_buffer: 30
+  ext_conn_manager_worker_channel_buffer: 30
+  data_service_buffer: 30
+  alerting_service_buffer: 30
+
+# configuration about times
+timing:
+  engine_timeout: 0 # seconds (86400s = 24h), '0' means no timeout
+  engine_ending_waiting_time: 15 # seconds. Time to wait until all ending activities are done before doing the shutdown
+

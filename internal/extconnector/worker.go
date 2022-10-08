@@ -30,6 +30,7 @@ import (
 	"sec-lope-de-vega/internal/englogging"
 	"sec-lope-de-vega/internal/messages"
 	"sec-lope-de-vega/internal/opvariables"
+
 	"golang.org/x/crypto/blake2b"
 	zmq "gopkg.in/zeromq/goczmq.v4"
 )
@@ -68,6 +69,10 @@ type ExternalConnectorWorker struct {
 	connectionID                       int
 	applicableGroups                   bool
 	convRulesGroup                     string
+	reloadConvRules                    bool
+	engineDir                          string
+	conversationRulesPath              string
+	relativePath                       bool
 }
 
 // function to create a new External Connector Worker
@@ -75,12 +80,13 @@ func NewExternalConnectorWorker(myEngineID string, extConnIDByte []byte,
 	myExtConnMessageContent map[string]interface{}, encryptedComms bool,
 	myConnRegister *opvariables.ConnectionRegister, myEngineDefaultSecret string,
 	myExtConnectorGroups []opvariables.ExternalConnectorGroup, myUseSignatureInsteadOfHash bool,
-	myEngineAuthCodeSignatureUsingSHA512, myEngineAuthCodeHashBlake2b, myEngineAuthCodeHashSha512 string,
-	myPrivRSAkeyEngineSign *rsa.PrivateKey, engineID string, myZmqRouter *zmq.Sock,
-	myConversationRulesSets []*opvariables.ConversationRules, myToExtConnMngr, myToDataService,
-	myToAlertingServicechan, myToEngineCockpit chan<- messages.ChannelMessage, myEcdsaPrivateKey *ecdsa.PrivateKey,
-	myActivitySignatureEnable bool, myConnectionID int, myGroup string,
-	myApplicableGroupsFlag bool) *ExternalConnectorWorker {
+	myEngineAuthCodeSignatureUsingSHA512, myEngineAuthCodeHashBlake2b,
+	myEngineAuthCodeHashSha512 string, myPrivRSAkeyEngineSign *rsa.PrivateKey, engineID string,
+	myZmqRouter *zmq.Sock, myConversationRulesSets []*opvariables.ConversationRules,
+	myToExtConnMngr, myToDataService, myToAlertingServicechan,
+	myToEngineCockpit chan<- messages.ChannelMessage, myEcdsaPrivateKey *ecdsa.PrivateKey,
+	myActivitySignatureEnable bool, myConnectionID int, myGroup string, myApplicableGroupsFlag bool,
+	reloadConvRules bool, engineDir string, conversationRulesPath string, relativePath bool) *ExternalConnectorWorker {
 
 	extConnWorker := ExternalConnectorWorker{
 		extConnMessageSenderBytes:          extConnIDByte,
@@ -106,6 +112,10 @@ func NewExternalConnectorWorker(myEngineID string, extConnIDByte []byte,
 		connectionID:                       myConnectionID,
 		applicableGroups:                   myApplicableGroupsFlag,
 		convRulesGroup:                     myGroup,
+		reloadConvRules:                    reloadConvRules,
+		engineDir:                          engineDir,
+		conversationRulesPath:              conversationRulesPath,
+		relativePath:                       relativePath,
 	}
 	return &extConnWorker
 }

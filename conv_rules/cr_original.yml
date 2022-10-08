@@ -403,14 +403,16 @@ conversation:
         # Some looping is supported, it will execute a set of async rules until conditions are no longer valid.
         # At the beginning of the loop
         async_loop:
-          loop:
-            conditions:
-              - var_name: var1
-                value: 2
-                reference_variable: var2
-            rules:
-              - rule_id: 3
-                delay: 3
+          conditions:
+            - var_name: var1
+              value: 2
+              reference_variable: var2
+          rules:
+            - rule_id: 3
+              delay: 3
+              # if present and grater than 0, this means the number
+              # of times the iteration can take place per each rule
+              max_number_iterations: 2000
 
         # You can create a new instance of external connector if a rule is executed
         # and optionally, passing a new configuration file, external connector id and password (secret).

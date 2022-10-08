@@ -13,6 +13,9 @@ external_connectors:
   conv_rules_folder:
     path: "/conv_rules"
     is_relative_path: yes
+  
+  # reload the conversation files
+  reload_conv_rules_in_new_ext_conn_contact: yes # yes/no(default)
 
   # configuration about the number of external connectors and workers
   max_number_of_workers: 200 # pool size

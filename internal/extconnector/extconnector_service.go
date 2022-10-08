@@ -53,7 +53,7 @@ const (
 	consTickTimeListeningMethod = 1 // Milliseconds
 )
 
-//  "object" for the external connector manager
+// "object" for the external connector manager
 type ExtConnManager struct {
 
 	// Internal Communication channels
@@ -98,6 +98,12 @@ type ExtConnManager struct {
 	activitySignatureEnable bool
 	// waiting time before ending engine execution
 	waitingEndingTime int
+	// Fields for reloading the conversation rules files in every new
+	// external connector new contact
+	reloadConvRules       bool
+	engineDir             string
+	conversationRulesPath string
+	relativePath          bool
 }
 
 // Function to create the engine signature or hash to be sent to external connectors to authenticate himself
@@ -173,9 +179,9 @@ func CreateExtConnManager(ctx *opvariables.Context, myToExtConnMngr chan message
 	initialNumberOfWorkers := 0
 
 	if newZmqRouter, err = zmq.NewRouter(serverAddress); err == nil {
-		if ctx.Cnfg.Networkorking.MQ.IPv6{
+		if ctx.Cnfg.Networkorking.MQ.IPv6 {
 			newZmqRouter.SetIpv6(1)
-		} 
+		}
 		if newZmqPoller, err := zmq.NewPoller(newZmqRouter); err == nil {
 
 			// create a new connection register
@@ -226,6 +232,10 @@ func CreateExtConnManager(ctx *opvariables.Context, myToExtConnMngr chan message
 				activitySignatureEnable:             ctx.Cnfg.ExtActivitySignature,
 				workerMutex:                         &sync.Mutex{},
 				waitingEndingTime:                   ctx.Cnfg.Timing.WaitingEndingTime,
+				reloadConvRules:                     ctx.Cnfg.ExternalConnectors.ReloadConvRules,
+				engineDir:                           ctx.EngineDir,
+				conversationRulesPath:               ctx.Cnfg.ExternalConnectors.ConvRulesFolder.Path,
+				relativePath:                        ctx.Cnfg.ExternalConnectors.ConvRulesFolder.IsRelativePath,
 			}
 		}
 	}
@@ -266,7 +276,8 @@ func (ecm *ExtConnManager) prepareOperationEnding(msg messages.ChannelMessage) {
 		ecm.useSignatureInsteadOfHash, ecm.EngineAuthCodeSignatureUsingSHA512, ecm.EngineAuthCodeHashBlake2b,
 		ecm.EngineAuthCodeHashSha512, ecm.privRSAkeyEngineSign, *ecm.EngineID, ecm.zmqRouter, ecm.conversationRulesSets,
 		ecm.toExtConnMngrFromWorkers, ecm.toDataService, ecm.toAlertingService, ecm.toEngineCockpit, ecm.ecdsaPrivateKey,
-		ecm.activitySignatureEnable, 0, "", false)
+		ecm.activitySignatureEnable, 0, "", false, ecm.reloadConvRules, ecm.engineDir, ecm.conversationRulesPath,
+		ecm.relativePath)
 	englogging.InfoLog("Preparing the ending of the engine execution and ordering the external "+
 		"connectors to end their operations!", nil)
 
@@ -330,7 +341,7 @@ func listenForMessages(ecm *ExtConnManager) {
 					if len(zmqRequest) > 0 {
 						ecm.processExtConnMessage(zmqRequest)
 					}
-				} else{
+				} else {
 					englogging.ErrorLog("Something went wrong at the time of receiving a message from external connectors", err)
 				}
 			}

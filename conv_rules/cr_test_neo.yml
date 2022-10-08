@@ -532,7 +532,7 @@ conversation:
                   value: 5
               # if conditions are satisfied, then a set of async (or hybrid) rules to execute
               rules:
-                - rule_id: 22
+                - rule_id: 23
                   delay: 1
 
             # second option or 'case'
@@ -540,12 +540,12 @@ conversation:
                 - var_name: conn_memory_string
                   value: monkey
               rules:
-                - rule_id: 23
+                - rule_id: 24
                   delay: 1
 
           default:
             # set of async ruls to execute if no 'case' statement is applicable
-            - rule_id: 24
+            - rule_id: 25
               delay: 1
 
       - id: 23
@@ -906,19 +906,27 @@ conversation:
         response: "\nlope-> This rule creates an async loop.\n
           It calls an async rule every second to tic as a clock while the memory variable 'conn_memory_string'= 'clock' \n\n"
         async_loop:
-          loop:
-            conditions:
-              - var_name: conn_memory_string
-                value: "clock"
-            rules:
-              - rule_id: 103
-                delay: 1
+          conditions:
+            - var_name: conn_memory_string
+              value: "clock"
+          rules:
+            - rule_id: 103
+              delay: 1
+              max_number_iterations: 5
+
+            - rule_id: 104
+              delay: 2
+              max_number_iterations: 7
 
       - id: 103
         mode: async
         response: "\nlope-> TIC...\n\n"
 
       - id: 104
+        mode: async
+        response: "\nlope-> TIC...\n\n"
+
+      - id: 105
         mode: sync
         regex: n2n
         response:

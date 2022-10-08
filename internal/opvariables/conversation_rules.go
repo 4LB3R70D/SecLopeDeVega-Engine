@@ -201,7 +201,12 @@ type Rule struct {
 
 	// async loop
 	AsyncLoop struct {
-		RulesAndConditions `yaml:"loop"`
+		Conditions       []MemElement  `yaml:"conditions"`
+		ConditionalRules []struct {
+			RuleID int `yaml:"rule_id"`
+			Delay  int `yaml:"delay"`
+			MaxNumberIterations int `yaml:"max_number_iterations"`
+		}`yaml:"rules"`
 	} `yaml:"async_loop"`
 
 	// create a new external connector (fork)
@@ -508,11 +513,11 @@ func importAuxFilesForMemVars(convRules ConversationRules, engineDir string) Con
 			// loop result
 			if success {
 				englogging.InfoLog("Auxiliary file: '"+memoryAuxFileAbsPath+
-					"' of memory variables imported successfully  for the conversation rules:'"+
+					"' of memory variables imported successfully for the conversation rules:'"+
 					convRules.Name+"'", nil)
 			} else {
 				englogging.ErrorLog("Not possible to open and read the auxiliary file: '"+
-					memoryAuxFileAbsPath+"' of memory variables  for the conversation rules:'"+
+					memoryAuxFileAbsPath+"' of memory variables for the conversation rules:'"+
 					convRules.Name+"'", err)
 			}
 			if !end {

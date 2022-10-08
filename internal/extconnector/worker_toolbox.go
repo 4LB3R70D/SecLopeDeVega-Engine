@@ -108,8 +108,16 @@ func (ecw *ExternalConnectorWorker) helloMessageProcessing(applicableGroups bool
 		activity.FillRawActivityField(ecw.activitySignatureEnable, ecw.ecdsaPrivateKey)
 		ecw.sendActivity2AlertingAndDataServices(activity)
 
+		var convRulesToUse []*opvariables.ConversationRules
+		if ecw.reloadConvRules{
+			convRulesToUse = opvariables.LoadConversationRules(ecw.engineDir, ecw.conversationRulesPath, ecw.relativePath) 
+		}else{
+			convRulesToUse = ecw.conversationRulesSets
+		}
+
+
 		// get the conversation rules given an external connection group
-		convRulesString, _, err := getConversationRules(applicableGroups, group, ecw.conversationRulesSets, true)
+		convRulesString, _, err := getConversationRules(applicableGroups, group, convRulesToUse, true)
 
 		if err != nil {
 			sendErrorMessage(ecw.extConnMessageSenderBytes, "Error getting the conversation rules",

@@ -770,13 +770,12 @@ conversation:
         response: "\nlope-> This rule creates an async loop.\n
           It calls an async rule every second to tic as a clock while the memory variable 'conn_memory_string'= 'clock' \n\n"
         async_loop:
-          loop:
-            conditions:
-              - var_name: conn_memory_string
-                value: "clock"
-            rules:
-              - rule_id: 103
-                delay: 1
+          conditions:
+            - var_name: conn_memory_string
+              value: "clock"
+          rules:
+            - rule_id: 103
+              delay: 1
 
       - id: 103
         mode: async

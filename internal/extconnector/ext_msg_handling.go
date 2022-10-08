@@ -195,7 +195,8 @@ func (ecm *ExtConnManager) delegateResponseInExtConnWorker(extConnIDByte []byte,
 				ecm.useSignatureInsteadOfHash, ecm.EngineAuthCodeSignatureUsingSHA512, ecm.EngineAuthCodeHashBlake2b,
 				ecm.EngineAuthCodeHashSha512, ecm.privRSAkeyEngineSign, *ecm.EngineID, ecm.zmqRouter, ecm.conversationRulesSets,
 				ecm.toExtConnMngrFromWorkers, ecm.toDataService, ecm.toAlertingService, ecm.toEngineCockpit, ecm.ecdsaPrivateKey,
-				ecm.activitySignatureEnable, currentConnection.ID, currentConnection.Group, currentConnection.ApplicableGroupsFlag)
+				ecm.activitySignatureEnable, currentConnection.ID, currentConnection.Group, currentConnection.ApplicableGroupsFlag,
+				ecm.reloadConvRules, ecm.engineDir, ecm.conversationRulesPath, ecm.relativePath)
 			// run the external connector worker in a different thread
 			go ecw.Start()
 			//update the counter

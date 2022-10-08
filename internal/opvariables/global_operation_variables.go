@@ -69,6 +69,7 @@ type Config struct {
 			Path           string `yaml:"path"`
 			IsRelativePath bool   `yaml:"is_relative_path"`
 		} `yaml:"conv_rules_folder"`
+		ReloadConvRules               bool                     `yaml:"reload_conv_rules_in_new_contact"`
 		MaxNumberOfExtConnWorkers     int                      `yaml:"max_number_of_workers"`
 		MaxNumberOfExternalConnectors int                      `yaml:"max_number_of_external_connectors_connected"`
 		DefaultSecret                 string                   `yaml:"default_secret"`

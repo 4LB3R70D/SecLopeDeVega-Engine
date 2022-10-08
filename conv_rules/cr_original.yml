@@ -414,10 +414,10 @@ conversation:
               # of times the iteration can take place per each rule
               max_number_iterations: 2000
 
-        # You can create a new instance of external connector if a rule is executed
+        # You can create new instances of external connectors if a rule is executed
         # and optionally, passing a new configuration file, external connector id and password (secret).
-        # If this parameters are not provided, the new instance of external connector will start as
-        # as the original did  (this is powered by python subprocess module)
+        # If these parameters are not provided, the new instance of external connector will start as
+        # as the original did (this is powered by python subprocess module)
         fork:
           enable: yes
           config_file: "/path/to/a/different/config/file"

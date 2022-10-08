@@ -916,7 +916,7 @@ conversation:
 
             - rule_id: 104
               delay: 2
-              max_number_iterations: 7
+              max_number_iterations: 3
 
       - id: 103
         mode: async
@@ -924,7 +924,7 @@ conversation:
 
       - id: 104
         mode: async
-        response: "\nlope-> TIC...\n\n"
+        response: "\nlope-> TIC...TIC...\n\n"
 
       - id: 105
         mode: sync

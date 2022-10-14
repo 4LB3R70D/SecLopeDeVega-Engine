@@ -172,6 +172,20 @@ type Config struct {
 			BodyIntro             string    `yaml:"body_intro"`
 			BodyEnd               string    `yaml:"body_end"`
 		} `yaml:"email"`
+
+		Slack struct {
+			Enable         bool   `yaml:"enable"`
+			OAuthToken     string `yaml:"oauth_token"`
+			AppLevelToken  string `yaml:"app_level_token"`
+			Url            string `yaml:"url"`
+			ChannelID      string `yaml:"channel_id"`
+			Debug          bool   `yaml:"debug_flag"`
+			Pretext        string `yaml:"pretext"`
+			BodyIntroSlack string `yaml:"body_intro"`
+			BodyEndSlack   string `yaml:"body_end"`
+			TextColor      string `yaml:"text_color"`
+			EncodeB64      bool   `yaml:"encode_activity_base64"`
+		} `yaml:"slack"`
 	} `yaml:"alert_service"`
 
 	Logging struct {

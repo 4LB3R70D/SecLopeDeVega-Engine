@@ -134,6 +134,7 @@ type ExtActivity struct {
 	AlertHttp                   bool
 	AlertKafka                  bool
 	AlertSyslog                 bool
+	AlertSlack                  bool
 	EndEngine                   bool
 
 	// Raw activity received
@@ -500,31 +501,32 @@ func addReportedMemory(procActivity ExtActivity, convRules *ConversationRules,
 }
 
 // Function to check a specific rule for alertin
-func checkSpecificRuleForAlerting(executedRuleID int, rule Rule) (bool, bool, bool, bool, bool, bool) {
+func checkSpecificRuleForAlerting(executedRuleID int, rule Rule) (bool, bool, bool, bool, bool, bool, bool) {
 
-	var alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, found bool
+	var alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack, found bool
 	if executedRuleID == rule.Id {
 		alertAll = alertAll || rule.Alert.All
 		alertEmail = alertEmail || rule.Alert.Email
 		alertHttp = alertHttp || rule.Alert.Http
 		alertKafka = alertKafka || rule.Alert.Kafka
 		alertSyslog = alertSyslog || rule.Alert.Syslog
+		alertSlack = alertSlack || rule.Alert.Slack
 		found = true
 	}
-	return found, alertAll, alertEmail, alertHttp, alertKafka, alertSyslog
+	return found, alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack
 
 }
 
 // Function to check if a list of executed conversation rules should be marked to be reported or not
-func checkRulesForAlerting(executedConvRules []int, convRules *ConversationRules) (bool, bool, bool, bool, bool) {
+func checkRulesForAlerting(executedConvRules []int, convRules *ConversationRules) (bool, bool, bool, bool, bool, bool) {
 
-	var alertAll, alertEmail, alertHttp, alertKafka, alertSyslog bool
+	var alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack bool
 	for _, executedRuleID := range executedConvRules {
 		found := false
 
 		// find the rule declaration
 		for _, rule := range convRules.Conversation.CustomRules.Rules {
-			found, alertAll, alertEmail, alertHttp, alertKafka, alertSyslog = checkSpecificRuleForAlerting(
+			found, alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack = checkSpecificRuleForAlerting(
 				executedRuleID, rule)
 			if found {
 				break
@@ -534,7 +536,7 @@ func checkRulesForAlerting(executedConvRules []int, convRules *ConversationRules
 		if !found {
 			for _, group := range convRules.Conversation.CustomRules.Groups {
 				for _, rule := range group.Rules {
-					found, alertAll, alertEmail, alertHttp, alertKafka, alertSyslog = checkSpecificRuleForAlerting(
+					found, alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack = checkSpecificRuleForAlerting(
 						executedRuleID, rule)
 					if found {
 						break
@@ -543,22 +545,22 @@ func checkRulesForAlerting(executedConvRules []int, convRules *ConversationRules
 			}
 		}
 	}
-	return alertAll, alertEmail, alertHttp, alertKafka, alertSyslog
+	return alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack
 }
 
 // Function to review if the activity should be marked to use for alerts, or not
 func reviewForAlerting(greetingsRule, defaultRule, emptyRule, conBrokenFlag, endConnection bool,
 	listConnectionsTimedOut []int, executedConvRules []int, executedAsyncRules []int,
-	convRules *ConversationRules) (bool, bool, bool, bool, bool) {
+	convRules *ConversationRules) (bool, bool, bool, bool, bool, bool) {
 
-	var alertEmail, alertHttp, alertKafka, alertSyslog bool
+	var alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack bool
 	alertAll := convRules.ExtOperation.AlertAllFlag
 
 	if !alertAll {
-		alertAllSync, alertEmailSync, alertHttpSync, alertKafkaSync, alertSyslogSync := checkRulesForAlerting(
+		alertAllSync, alertEmailSync, alertHttpSync, alertKafkaSync, alertSyslogSync, alertSlackSync := checkRulesForAlerting(
 			executedConvRules, convRules)
 
-		alertAllAsync, alertEmailAsync, alertHttpAsync, alertKafkaAsync, alertSyslogAsync := checkRulesForAlerting(
+		alertAllAsync, alertEmailAsync, alertHttpAsync, alertKafkaAsync, alertSyslogAsync, alertSlackAsync := checkRulesForAlerting(
 			executedAsyncRules, convRules)
 
 		alertEmail = (greetingsRule && convRules.Conversation.Greetings.Alert.Email) ||
@@ -589,15 +591,22 @@ func reviewForAlerting(greetingsRule, defaultRule, emptyRule, conBrokenFlag, end
 			(len(listConnectionsTimedOut) > 0 && convRules.Conversation.Timeout.Alert.Syslog) ||
 			alertSyslogSync || alertSyslogAsync
 
+		alertSlack = (greetingsRule && convRules.Conversation.Greetings.Alert.Slack) ||
+			(defaultRule && convRules.Conversation.Default.Alert.Slack) ||
+			(emptyRule && convRules.Conversation.Empty.Alert.Slack) ||
+			((conBrokenFlag || endConnection) && convRules.Conversation.Ending.Alert.Slack) ||
+			(len(listConnectionsTimedOut) > 0 && convRules.Conversation.Timeout.Alert.Slack) ||
+			alertSlackSync || alertSlackAsync
+
 		alertAll = alertAll || alertAllSync || alertAllAsync
 
 		// if all alerts are False, the alertAll will be enable. Default => alert via all channels
 		// this happens when this level of detail is not provided
-		if !alertAll && !alertEmail && !alertHttp && !alertKafka && !alertSyslog {
+		if !alertAll && !alertEmail && !alertHttp && !alertKafka && !alertSyslog && !alertSlack {
 			alertAll = true
 		}
 	}
-	return alertAll, alertEmail, alertHttp, alertKafka, alertSyslog
+	return alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -808,7 +817,7 @@ func ProcessActivity(rawActivity map[string]interface{}, myExtConnMessageSender 
 
 	procActivity = addReportedMemory(procActivity, convRules, errorGettingConvRulesForGroup, rawActivity)
 
-	alertAll, alertEmail, alertHttp, alertKafka, alertSyslog := reviewForAlerting(procActivity.GreetingsRule,
+	alertAll, alertEmail, alertHttp, alertKafka, alertSyslog, alertSlack := reviewForAlerting(procActivity.GreetingsRule,
 		procActivity.DefaultRule, procActivity.EmptyRule, procActivity.ConBrokenFlag, procActivity.EndConnection,
 		procActivity.ListConnectionsTimedOut, procActivity.ExecutedConvRules, procActivity.ExecutedAsyncRules, convRules)
 
@@ -817,6 +826,7 @@ func ProcessActivity(rawActivity map[string]interface{}, myExtConnMessageSender 
 	procActivity.AlertHttp = alertHttp
 	procActivity.AlertKafka = alertKafka
 	procActivity.AlertSyslog = alertSyslog
+	procActivity.AlertSlack = alertSlack
 
 	if errorGettingConvRulesForGroup != nil {
 		englogging.WarnLog("Error getting the conversation rules for the group of the external connector"+

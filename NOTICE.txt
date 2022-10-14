@@ -12,6 +12,7 @@ These dependencies have not been modified in any way for this project, and they 
    - github.com/natefinch/lumberjack => MIT License => https://github.com/natefinch/lumberjack/blob/v2.0/LICENSE
    - github.com/go-yaml/yaml => MIT & Apache Licenses => https://github.com/go-yaml/yaml/blob/v3/LICENSE
    - github.com/zeromq/goczmq => MPL-2 License (Incompatible With Secondary Licenses - GPL Incompatible) => https://github.com/zeromq/goczmq/blob/master/LICENSE
+   - github.com/slack-go/slack => BSD 2-Clause "Simplified" License => https://github.com/slack-go/slack/blob/master/LICENSE 
 
 
 

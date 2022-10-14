@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -120,7 +120,7 @@ func (aleser *AlertingService) sendHttpAlert(activity opvariables.ExtActivity) {
 		defer aleser.httpMutex.Unlock()
 		if resp, err := aleser.httpClient.Do(req); err == nil {
 			defer resp.Body.Close()
-			if respBody, err := ioutil.ReadAll(resp.Body); err == nil {
+			if respBody, err := io.ReadAll(resp.Body); err == nil {
 				logMsg := fmt.Sprintf("Response received after sending the HTTP: '%s'", string(respBody[:]))
 				englogging.DebugLog(logMsg, nil)
 			} else {

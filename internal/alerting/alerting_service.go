@@ -27,8 +27,10 @@ import (
 	"sec-lope-de-vega/internal/englogging"
 	"sec-lope-de-vega/internal/messages"
 	"sec-lope-de-vega/internal/opvariables"
+
 	"github.com/RackSec/srslog"
 	"github.com/segmentio/kafka-go"
+	"github.com/slack-go/slack/socketmode"
 )
 
 const (
@@ -39,7 +41,7 @@ const (
 	consSafeEndingTime              = 3 // seconds
 )
 
-//  "object" for the daata service
+// "object" for the daata service
 type AlertingService struct {
 	working           bool
 	toEngineCockpit   chan<- messages.ChannelMessage
@@ -104,6 +106,16 @@ type AlertingService struct {
 	emailPrivKeyLocation string
 	emailKeyProtected    bool
 	encodeB64Email       bool
+
+	// slack alerting
+	enableSlackDelivery bool
+	slackClient         *socketmode.Client
+	pretext             string
+	channelID           string
+	bodyIntroSlack      string
+	bodyEndSlack        string
+	textColor           string
+	encodeB64Slack      bool
 }
 
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -188,6 +200,9 @@ func (aleser *AlertingService) notifyNewActivity(activity opvariables.ExtActivit
 	if aleser.enableMailDelivery && (activity.AlertAll || activity.AlertEmail) {
 		aleser.sendAlertEmail(activity)
 	}
+	if aleser.enableSlackDelivery && (activity.AlertAll || activity.AlertSlack) {
+		aleser.sendSlackAlert(activity)
+	}
 	aleser.decreaseNumberOfAlertWorkers()
 }
 
@@ -195,7 +210,7 @@ func (aleser *AlertingService) notifyNewActivity(activity opvariables.ExtActivit
 // PUBLIC FUNCTIONS
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-//function to create a new data service
+// function to create a new data service
 func CreateAlertingService(ctx *opvariables.Context, myToEngineCockpit chan<- messages.ChannelMessage,
 	myToAlertingService <-chan messages.ChannelMessage) *AlertingService {
 
@@ -242,6 +257,13 @@ func CreateAlertingService(ctx *opvariables.Context, myToEngineCockpit chan<- me
 	var privKeyLocationKafka string
 	if ctx.Cnfg.AlertingService.KafKa.Enable {
 		enableKafka, kafkaWriter, privKeyLocationKafka = initKafka(ctx)
+	}
+
+	// Slack initialization
+	var enableSlack bool
+	var slackClient *socketmode.Client
+	if ctx.Cnfg.AlertingService.Slack.Enable {
+		enableSlack, slackClient = initSlackClient(ctx)
 	}
 
 	// Service initialisation
@@ -317,6 +339,16 @@ func CreateAlertingService(ctx *opvariables.Context, myToEngineCockpit chan<- me
 
 		emailKeyProtected: ctx.Cnfg.AlertingService.Email.TLS.Enable &&
 			ctx.Cnfg.AlertingService.Email.TLS.EngineClientKeyProtected,
+
+		// slack
+		enableSlackDelivery: enableSlack,
+		slackClient:         slackClient,
+		pretext:             ctx.Cnfg.AlertingService.Slack.Pretext,
+		channelID:           ctx.Cnfg.AlertingService.Slack.ChannelID,
+		bodyIntroSlack:      ctx.Cnfg.AlertingService.Slack.BodyIntroSlack,
+		bodyEndSlack:        ctx.Cnfg.AlertingService.Slack.BodyEndSlack,
+		textColor:           ctx.Cnfg.AlertingService.Slack.TextColor,
+		encodeB64Slack:      ctx.Cnfg.AlertingService.Slack.EncodeB64,
 	}
 	return &alertingService
 }
@@ -337,7 +369,7 @@ func (aleser *AlertingService) Start() {
 				if aleser.numberWorkers < aleser.maxWorkers {
 					// Check if this activity should be reported, or not
 					if activity.AlertAll || activity.AlertEmail || activity.AlertHttp ||
-						activity.AlertKafka || activity.AlertSyslog {
+						activity.AlertKafka || activity.AlertSyslog || activity.AlertSlack {
 						aleser.increaseNumberOfAlertWorkers()
 						go aleser.notifyNewActivity(activity)
 					} else {

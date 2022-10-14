@@ -92,6 +92,7 @@ type MemOpsStruct struct {
 
 // information about when to report something
 type AlertInfo struct {
+	Slack  bool `yaml:"slack"`
 	Email  bool `yaml:"email"`
 	Http   bool `yaml:"http"`
 	Kafka  bool `yaml:"kafka"`

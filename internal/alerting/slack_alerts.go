@@ -33,6 +33,7 @@ import (
 )
 
 var (
+	// since there are concurrency in place, ensure that only one thread can use the client in any moment
 	slackMutex = &sync.Mutex{}
 )
 
@@ -79,7 +80,7 @@ func initSlackClient(ctx *opvariables.Context) (bool, *socketmode.Client) {
 		socketmode.OptionLog(fakelLoggerSocketMode),
 	)
 
-	initialText := fmt.Sprintf("%s%s","Lope engine connected! EngineID: ",ctx.ID)
+	initialText := fmt.Sprintf("%s%s", "Lope engine connected! EngineID: ", ctx.ID)
 	enableSlack = deliverSlackMessage("", initialText, ctx.Cnfg.AlertingService.Slack.TextColor,
 		ctx.Cnfg.AlertingService.Slack.ChannelID, client)
 
@@ -96,7 +97,7 @@ func deliverSlackMessage(pretext, text, color, channelID string, client *socketm
 	defer slackMutex.Unlock()
 
 	attachment := slack.Attachment{
-		Text:    text,
+		Text:  text,
 		Color: color,
 		Fields: []slack.AttachmentField{
 			{
@@ -105,16 +106,13 @@ func deliverSlackMessage(pretext, text, color, channelID string, client *socketm
 			},
 		},
 	}
-	if len(pretext) > 0{
+	if len(pretext) > 0 {
 		attachment.Pretext = pretext
 	}
 
-	// PostMessage will send the message away.
-	// First parameter is just the channelID, makes no sense to accept it
+	// Post Message will send the message away.
 	if _, _, err := client.PostMessage(
 		channelID,
-		// uncomment the item below to add a extra Header to the message, try it out :)
-		//slack.MsgOptionText("New message from bot", false),
 		slack.MsgOptionAttachments(attachment),
 	); err == nil {
 		success = true

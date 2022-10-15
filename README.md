@@ -69,5 +69,5 @@ This project is the result of the work done in the spare time of the contributor
 
 WARNING
 -------
-   Please, consider this project as **somewhere in between an alpha and beta version** since some capabilities (mainly the integration with other systems for sending alerts, 
-   as well as the support of TLS) have not been fully tested.
+Please, consider this project as **somewhere in between an alpha and beta version** since some capabilities (mainly the integration with other systems for sending alerts, 
+as well as the support of TLS) have not been fully tested.

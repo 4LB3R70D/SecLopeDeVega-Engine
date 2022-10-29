@@ -115,8 +115,7 @@ func (ecw *ExternalConnectorWorker) helloMessageProcessing(applicableGroups bool
 			convRulesToUse = ecw.conversationRulesSets
 		}
 
-
-		// get the conversation rules given an external connection group
+		// get the conversation rules given an external connector group
 		convRulesString, _, err := getConversationRules(applicableGroups, group, convRulesToUse, true)
 
 		if err != nil {

@@ -136,8 +136,8 @@ CREATE TABLE `external_activity` (
   `empty_rule` tinyint(1) NOT NULL DEFAULT 0,
   `raw_activity` varchar(5000) DEFAULT NULL,
   `hash` varchar(500) DEFAULT NULL,
-  `pub_key_signature` varchar(500) DEFAULT NULL,
-  `signature` varchar(500) DEFAULT NULL,
+  `pub_key_signature` varchar(520) DEFAULT NULL,
+  `signature` varchar(520) DEFAULT NULL,
   PRIMARY KEY (`external_activity_pk`),
   KEY `external_connection_pk` (`external_connection_pk`),
   CONSTRAINT `external_connection_pk` FOREIGN KEY (`external_connection_pk`) REFERENCES `external_connection` (`external_connection_pk`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -164,7 +164,7 @@ CREATE TABLE `external_connection` (
   `timed_out` tinyint(1) NOT NULL DEFAULT 0,
   `broken` tinyint(1) NOT NULL DEFAULT 0,
   `incomplete` tinyint(1) NOT NULL DEFAULT 0,
-  `hash_conv_rules_used` varchar(150) DEFAULT NULL,
+  `hash_conv_rules_used` varchar(180) DEFAULT NULL,
   PRIMARY KEY (`external_connection_pk`),
   KEY `external_connecion_session_pk` (`external_connector_session_pk`),
   CONSTRAINT `external_connecion_session_pk` FOREIGN KEY (`external_connector_session_pk`) REFERENCES `external_connector_session` (`external_connector_session_pk`) ON DELETE CASCADE ON UPDATE CASCADE

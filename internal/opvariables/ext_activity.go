@@ -198,15 +198,15 @@ func signExtActivity(jsonRawActivityBytes []byte, ecdsaPrivateKey *ecdsa.Private
 	if err != nil {
 		englogging.ErrorLog("Error geting the digital signature of the external activity", err)
 	} else {
-		signature = hex.EncodeToString(activitySignatureBytes)
-		hash = hex.EncodeToString(activityHashBytes[:])
+		signature = "ecdsa_sha256:"+hex.EncodeToString(activitySignatureBytes)
+		hash = "sha256:"+hex.EncodeToString(activityHashBytes[:])
 		// https://stackoverflow.com/questions/21322182/how-to-store-ecdsa-private-key-in-go
 		x509EncodedPub, err := x509.MarshalPKIXPublicKey(&ecdsaPrivateKey.PublicKey)
 		if err != nil {
 			englogging.ErrorLog("Error marshaling the public key in the x509 format for activity signature", err)
 		} else {
 			pemEncodedPub := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub})
-			pubKeyActivitySignature = string(pemEncodedPub)
+			pubKeyActivitySignature = "pub_key_ecdsa_sha256:"+string(pemEncodedPub)
 			successSignature = true
 			englogging.DebugLog("External activity signed, obtained signature: "+pubKeyActivitySignature, nil)
 			/*

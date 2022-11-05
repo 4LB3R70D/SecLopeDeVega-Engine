@@ -1,6 +1,6 @@
 FROM golang:latest
 
-# Add CA certificates
+# Add CA certificates and zeroMQ libraries
 RUN apt update && apt upgrade -y \
     && apt install ca-certificates libsodium-dev libzmq3-dev libczmq-dev -y \
     && rm -rf /var/lib/apt/lists/
@@ -20,9 +20,9 @@ VOLUME [ "/app/logs", "/app/storage" ]
 
 # In case you use TLS
 # ===================
-# RUN mkdir /tls
+# RUN mkdir ./tls
 # COPY /path/to/your/certs /app/tls
-# COPY /path/to/your/priv_keys /tls
+# COPY /path/to/your/priv_keys /app/tls
 
 # Copy the engine and its respective config files
 COPY ./src .

@@ -11,7 +11,7 @@ external_activity_signature:
 external_connectors:
   # not include the final '/', do not use '.'. For using the current folder, use only this ""
   conv_rules_folder:
-    path: "/conv_rules"
+    path: "./conv_rules"
     is_relative_path: yes
   
   # reload the conversation files
@@ -68,7 +68,7 @@ data_service:
   simple_file_storage:
     enable: no # yes/no(default)
     # not include the final '/', do not use '.'. For using the current folder, use only this ""
-    folder_path: "/raw_data"
+    folder_path: "./storage"
     is_relative_path: yes
     encode_b64: no #yes/no(default). To encode b64 the activities to be saved
 
